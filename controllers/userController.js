@@ -7,7 +7,7 @@ const bcrypt = require('bcrypt');
 const createUser = async (req, res, next) => {
     const { email, password, nickname, profile_image } = req.body;
     //사용자 정보가 입력되지 않았을 때
-    if(!email || !password || !nickname) {
+    if(!email || !password || !nickname || !profile_image) {
         return next(new BadRequest());
     }
 
@@ -43,9 +43,11 @@ const createUser = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
+//로그인
 const login = async (req, res, next) => {
     const { email, password } = req.body;
 
+    //사용자 정보가 입력되지 않았을 때
     if(!email || !password) {
         return next(new BadRequest());
     }
@@ -74,7 +76,9 @@ const login = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
+//회원 정보 조회
 const getUserDetails = async (req, res, next) => {
+    //경로 파라미터 추출
     const id = req.params.user_id;
     
     try {
@@ -93,5 +97,28 @@ const getUserDetails = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
+//회원 정보 수정
+const updateUserInfo = async (req, res, next) => {
+    //경로 파라미터 추출
+    const id = req.params.user_id;
+    const { nickname, profile_image } = req.body;
 
-module.exports = { createUser, login, getUserDetails };
+    if(!nickname) {
+        return next(new BadRequest());
+    }
+    
+    try {
+        const user = await UserModel.update(id, nickname, profile_image);
+    
+        res.status(200).json({
+            message: '회원 정보 수정을 성공했습니다.',
+            data: {
+                user_id: user.id
+            }
+        });
+    }catch(error) {
+        return next(new InternalServerError());
+    }
+}
+
+module.exports = { createUser, login, getUserDetails, updateUserInfo };
