@@ -61,7 +61,7 @@ const login = async (req, res, next) => {
         if(!isPasswordValid){
             return next(new BadRequest());
         }
-        
+
         const { id } = user;
 
         res.status(200).json({
@@ -74,5 +74,24 @@ const login = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
+const getUserDetails = async (req, res, next) => {
+    const id = req.params.user_id;
+    
+    try {
+        const user = await UserModel.findById(id);
 
-module.exports = { createUser, login };
+        res.status(200).json({
+            message: '회원 정보 조회를 성공했습니다.',
+            data: {
+                user_id: user.id,
+                email : user.email,
+                nickname : user.nickname,
+                profile_image : user.profile_image
+            }
+        });
+    }catch(error) {
+        return next(new InternalServerError());
+    }
+}
+
+module.exports = { createUser, login, getUserDetails };
