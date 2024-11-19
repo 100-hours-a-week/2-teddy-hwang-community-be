@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 
 //사용자 생성
 const createUser = async (req, res, next) => {
-    const {email, password, nickname, profile_image} = req.body;
+    const { email, password, nickname, profile_image } = req.body;
     //사용자 정보가 입력되지 않았을 때
     if(!email || !password || !nickname) {
         return next(new BadRequest());
@@ -40,13 +40,39 @@ const createUser = async (req, res, next) => {
             }
         });
     }catch(error) {
-        console.error(error);
         return next(new InternalServerError());
     }
+}
+const login = async (req, res, next) => {
+    const { email, password } = req.body;
 
-    //기존 사용자 데이터 읽어오기
+    if(!email || !password) {
+        return next(new BadRequest());
+    }
+    try {
+        const user = await UserModel.findByEmail(email);
 
-    //새로운 사용자 저장
+        if(!user){
+            return next(new BadRequest());
+        }
+        //저장된 비밀번호와 입력된 비밀번호 비교
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if(!isPasswordValid){
+            return next(new BadRequest());
+        }
+        
+        const { id } = user;
+
+        res.status(200).json({
+            message: '로그인을 성공했습니다.',
+            data: {
+                user_id: { id }
+            }
+        });
+    }catch(error) {
+        return next(new InternalServerError());
+    }
 }
 
-module.exports = { createUser };
+module.exports = { createUser, login };
