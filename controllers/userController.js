@@ -108,7 +108,7 @@ const updateUserInfo = async (req, res, next) => {
     }
     
     try {
-        const user = await UserModel.update(id, nickname, profile_image);
+        const user = await UserModel.updateUser(id, nickname, profile_image);
     
         res.status(200).json({
             message: '회원 정보 수정을 성공했습니다.',
@@ -120,5 +120,34 @@ const updateUserInfo = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
+//비밀번호 수정
+const updatePassword = async (req, res, next) => {
+    //경로 파라미터 추출
+    const id = req.params.user_id;
+    const password = req.body.password;
 
-module.exports = { createUser, login, getUserDetails, updateUserInfo };
+    if(!password) {
+        return next(new BadRequest());
+    }
+    
+    try {
+        const user = await UserModel.updatePassword(id, password);
+    
+        res.status(200).json({
+            message: '비밀번호 수정을 성공했습니다.',
+            data: {
+                user_id: user.id
+            }
+        });
+    }catch(error) {
+        return next(new InternalServerError());
+    }
+}
+
+module.exports = {
+     createUser, 
+     login, 
+     getUserDetails, 
+     updateUserInfo, 
+     updatePassword 
+};

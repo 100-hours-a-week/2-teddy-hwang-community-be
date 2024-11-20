@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { InternalServerError } = require('../middleware/customError');
+const bcrypt = require('bcrypt');
+const { InternalServerError, BadRequest } = require('../middleware/customError');
 
 class User {
     constructor() {
@@ -50,7 +51,7 @@ class User {
         }
     }
     //회원 정보 수정
-    update(id, nickname, profile_image) {
+    updateUser(id, nickname, profile_image) {
         try {
             const users = this.findAll();
             const userIndex = users.findIndex(user => user.id === Number(id));
@@ -70,6 +71,30 @@ class User {
             fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
 
             return updatedUser;
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
+    //비밀번호 수정
+    updatePassword(id, password) {
+        try {
+            const users = this.findAll();
+            const userIndex = users.findIndex(user => user.id === Number(id));
+
+            if(userIndex === -1) {
+                throw new Error('유저를 찾을 수 없습니다.');
+            }
+            //현재 유저
+            const user = users[userIndex];
+            //새로운 비밀번호 해시
+            const salt = bcrypt.genSaltSync(10);
+            const encryptedPassword = bcrypt.hashSync(password, salt);
+            user.password = encryptedPassword;
+            
+            users[userIndex] = user;
+            fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
+
+            return updatedPassword;
         }catch(error) {
             throw new InternalServerError();
         }
