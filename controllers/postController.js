@@ -1,0 +1,52 @@
+const { BadRequest, InternalServerError } = require('../middleware/customError');
+const PostModel = require('../model/Post');
+
+//글생성
+const createPost = async (req, res, next) => {
+    try {
+        const { 
+            title, 
+            content, 
+            image, 
+            user_id } = req.body;
+        
+        if(!title && !content && !user_id) {
+            next(new BadRequest());
+        }
+
+        const newPost = await PostModel.createPost({
+            title,
+            content,
+            image,
+            created_at : timestamp(), 
+            modified_at : timestamp(), 
+            like_count : 0, 
+            view_count : 0, 
+            comment_count : 0, 
+            user_id
+        });
+
+        const { id } = newPost;
+        
+        res.status(201).json({
+            message: '게시글 작성을 성공했습니다.',
+            data: {
+                post_id: { id }
+            }
+        });
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
+//날짜 변환 함수
+const timestamp = () => {
+    const today = new Date();
+    // 미국시간 기준이니까 9를 더해주면 대한민국 시간
+    today.setHours(today.getHours() + 9);
+    // 문자열로 바꿔주고 T를 빈칸으로 바꿔주면 yyyy-mm-dd hh:mm:ss 이런 형식 나옴
+    return today.toISOString().replace("T", " ").substring(0, 19);
+}
+
+module.exports = {
+    createPost
+}
