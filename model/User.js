@@ -13,7 +13,6 @@ class User {
             const data = fs.readFileSync(this.filePath, 'utf8');
             return data ? JSON.parse(data) : [];
         }catch(error) {
-            console.log(error);
             if(error.code === 'ENOENT') {
                 return [];
             }
