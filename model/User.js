@@ -10,9 +10,10 @@ class User {
     //모든 유저 조회
     findAll() {
         try {
-            const data = fs.readFileSync(this.filePath, 'utf-8');
+            const data = fs.readFileSync(this.filePath, 'utf8');
             return data ? JSON.parse(data) : [];
         }catch(error) {
+            console.log(error);
             if(error.code === 'ENOENT') {
                 return [];
             }
@@ -21,18 +22,52 @@ class User {
     }
     //ID로 유저 조회
     findById(id) {
-        const users = this.findAll();
-        return users.find(user => user.id === id);
+        try {
+            const users = this.findAll();
+            return users.find(user => user.id === id);
+        }catch(error) {
+            throw new InternalServerError();
+        }
     }
     //이메일로 유저 조회
     findByEmail(email) {
-        const users = this.findAll();
-        return users.find(user => user.email === email);
+        try {
+            const users = this.findAll();
+            return users.find(user => user.email === email);
+        }catch(error) {
+            throw new InternalServerError();
+        }
     }
     //닉네임으로 유저 조회
     findByNickname(nickname) {
-        const users = this.findAll();
-        return users.find(user => user.nickname === nickname);
+        try {
+            const users = this.findAll();
+            return users.find(user => user.nickname === nickname);
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
+    //비밀번호 확인
+    findByPassword(id, password) {
+        try {
+            const users = this.findAll();
+            const user = users.find(user => user.id === id);
+            
+            if(!user) {
+                throw new BadRequest();
+            }
+
+            const isPasswordValid = bcrypt.compareSync(user.password, password);
+
+            if(!isPasswordValid) {
+                throw new BadRequest();
+            }
+
+            return true;
+
+        }catch(error) {
+            throw new InternalServerError();
+        }
     }
     //회원가입
     save(userData) {
@@ -75,8 +110,8 @@ class User {
             throw new InternalServerError();
         }
     }
-    //비밀번호 수정
-    updatePassword(id, password) {
+     //비밀번호 수정
+     updatePassword(id, password) {
         try {
             const users = this.findAll();
             const userIndex = users.findIndex(user => user.id === Number(id));
@@ -94,8 +129,9 @@ class User {
             users[userIndex] = user;
             fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
 
-            return updatedPassword;
+            return user;
         }catch(error) {
+            console.log(error);
             throw new InternalServerError();
         }
     }
