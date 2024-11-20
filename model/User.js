@@ -24,7 +24,7 @@ class User {
     findById(id) {
         try {
             const users = this.findAll();
-            return users.find(user => user.id === id);
+            return users.find(user => Number(user.id) === Number(id));
         }catch(error) {
             throw new InternalServerError();
         }
@@ -132,6 +132,36 @@ class User {
             return user;
         }catch(error) {
             console.log(error);
+            throw new InternalServerError();
+        }
+    }
+    //이메일 중복 확인
+    existsByEmail(email) {
+        try {
+            const users = this.findAll();
+            const user = users.find(user => user.email === email); 
+            return user !== undefined;
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
+    //닉네임 중복 확인
+    existsByNickname(nickname) {
+        try {
+            const users = this.findAll();
+            const user = users.find(user => user.nickname === nickname); 
+            return user !== undefined;
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
+    //비밀번호 변경시 기존 암호가 맞는지 확인
+    checkPasswordMatch(id, password) {
+        try {
+            const users = this.findAll();
+            const user = users.find(user => Number(user.id) === Number(id) && bcrypt.compareSync(password, user.password));
+            return user !== undefined;
+        }catch(error) {
             throw new InternalServerError();
         }
     }

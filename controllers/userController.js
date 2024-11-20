@@ -5,13 +5,13 @@ const bcrypt = require('bcrypt');
 
 //사용자 생성
 const createUser = async (req, res, next) => {
-    const { email, password, nickname, profile_image } = req.body;
-    //사용자 정보가 입력되지 않았을 때
-    if(!email || !password || !nickname || !profile_image) {
-        return next(new BadRequest());
-    }
-
     try {
+        const { email, password, nickname, profile_image } = req.body;
+        //사용자 정보가 입력되지 않았을 때
+        if(!email || !password || !nickname || !profile_image) {
+            return next(new BadRequest());
+        }
+
         //이메일 중복검사
         const existingEmail = await UserModel.findByEmail(email);
         if(existingEmail) {
@@ -45,13 +45,14 @@ const createUser = async (req, res, next) => {
 }
 //로그인
 const login = async (req, res, next) => {
-    const { email, password } = req.body;
-
-    //사용자 정보가 입력되지 않았을 때
-    if(!email || !password) {
-        return next(new BadRequest());
-    }
     try {
+        const { email, password } = req.body;
+
+        //사용자 정보가 입력되지 않았을 때
+        if(!email || !password) {
+            return next(new BadRequest());
+        }
+
         const user = await UserModel.findByEmail(email);
 
         if(!user){
@@ -78,10 +79,10 @@ const login = async (req, res, next) => {
 }
 //회원 정보 조회
 const getUserDetails = async (req, res, next) => {
-    //경로 파라미터 추출
-    const id = req.params.user_id;
-    
     try {
+        //경로 파라미터 추출
+        const id = req.params.user_id;
+
         const user = await UserModel.findById(id);
 
         res.status(200).json({
@@ -99,15 +100,15 @@ const getUserDetails = async (req, res, next) => {
 }
 //회원 정보 수정
 const updateUserInfo = async (req, res, next) => {
-    //경로 파라미터 추출
-    const id = req.params.user_id;
-    const { nickname, profile_image } = req.body;
-
-    if(!nickname) {
-        return next(new BadRequest());
-    }
-    
     try {
+        //경로 파라미터 추출
+        const id = req.params.user_id;
+        const { nickname, profile_image } = req.body;
+
+        if(!nickname) {
+            return next(new BadRequest());
+        }
+        
         const user = await UserModel.updateUser(id, nickname, profile_image);
     
         res.status(200).json({
@@ -122,15 +123,15 @@ const updateUserInfo = async (req, res, next) => {
 }
 //비밀번호 수정
 const updatePassword = async (req, res, next) => {
-    //경로 파라미터 추출
-    const id = req.params.user_id;
-    const password = req.body.password;
-
-    if(!password) {
-        return next(new BadRequest());
-    }
-    
     try {
+        //경로 파라미터 추출
+        const id = req.params.user_id;
+        const password = req.body.password;
+
+        if(!password) {
+            return next(new BadRequest());
+        }
+
         const user = await UserModel.updatePassword(id, password);
     
         res.status(200).json({
@@ -143,11 +144,71 @@ const updatePassword = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
+//이메일 중복 확인
+const existsByEmail = async (req, res, next) => {  
+    try {
+        const email = req.params.email;
+
+        const user = await UserModel.existsByEmail(email);
+
+        if(!user) {
+            res.status(200).json({
+                message: '중복된 이메일이 없습니다.'
+            });
+        }else {
+            return next(new BadRequest());
+        }
+    }catch(error) {
+        return next(new InternalServerError());
+    }   
+}
+//닉네임 중복 확인
+const existsByNickname = async (req, res, next) => {  
+    try {
+        const nickname = req.params.nickname;
+
+        const user = await UserModel.existsByNickname(nickname);
+
+        if(!user) {
+            res.status(200).json({
+                message: '중복된 닉네임이 없습니다.'
+            });
+        }else {
+            return next(new BadRequest());
+        }
+    }catch(error) {
+        return next(new InternalServerError());
+    }   
+}
+//비밀번호 변경시 기존 암호가 맞는지 확인
+const checkPasswordMatch = async (req, res, next) => {
+    try {
+        const id = req.params.user_id;
+        const password = req.params.password;
+
+        const user = await UserModel.checkPasswordMatch(id, password);
+
+        if(user) {
+            res.status(200).json({
+                message: '기존 비밀번호와 일치합니다.'
+            });
+        }else {
+            return next(new BadRequest());
+        }
+
+    }catch(error) {
+        return next(new InternalServerError());
+    }
+
+}
 
 module.exports = {
      createUser, 
      login, 
      getUserDetails, 
      updateUserInfo, 
-     updatePassword 
+     updatePassword,
+     existsByEmail,
+     existsByNickname,
+     checkPasswordMatch
 };
