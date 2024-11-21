@@ -82,6 +82,11 @@ class Post {
         try {
             const posts = this.findAll();
             const post = posts.find(post => post.id === Number(id));
+            //조회수 증가
+            post.view_count++;
+            //변경된 정보 저장
+            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
+            
             const user = User.findById(post.user_id);
             const comments = Comment.findByPostId(post.id);
 
