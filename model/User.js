@@ -23,7 +23,8 @@ class User {
     findById(id) {
         try {
             const users = this.findAll();
-            return users.find(user => Number(user.id) === Number(id));
+            const user = users.find(user => Number(user.id) === Number(id));
+            return user ? user : null;
         }catch(error) {
             throw new InternalServerError();
         }
