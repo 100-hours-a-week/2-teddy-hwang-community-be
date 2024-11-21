@@ -13,12 +13,12 @@ const createUser = async (req, res, next) => {
         }
 
         //이메일 중복검사
-        const existingEmail = await UserModel.findByEmail(email);
+        const existingEmail = await UserModel.existsByEmail(email);
         if(existingEmail) {
             return next(new BadRequest());
         }
         //닉네임 중복검사
-        const existingNickname = await UserModel.findByNickname(nickname);
+        const existingNickname = await UserModel.existsByNickname(nickname);
         if(existingNickname) {
             return next(new BadRequest());
         }

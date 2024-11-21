@@ -32,16 +32,8 @@ class User {
     findByEmail(email) {
         try {
             const users = this.findAll();
-            return users.find(user => user.email === email);
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //닉네임으로 유저 조회
-    findByNickname(nickname) {
-        try {
-            const users = this.findAll();
-            return users.find(user => user.nickname === nickname);
+            const user = users.find(user => user.email === email);
+            return user ? user : null;
         }catch(error) {
             throw new InternalServerError();
         }

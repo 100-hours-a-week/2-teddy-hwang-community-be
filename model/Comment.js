@@ -1,8 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const User = require('./User');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
-class Post {
+class Comment {
     constructor() {
         this.filePath = path.join(__dirname, '../data/comments.json');
     }
@@ -18,6 +19,7 @@ class Post {
             throw error;
         }
     }
+    //댓글 생성
     createComment(commentData) {
         try {
             const comments = this.findAll();
@@ -35,6 +37,28 @@ class Post {
             throw new InternalServerError();
         }
     }
+    //글에 해당하는 댓글 조회(댓글 유저 정보 포함)
+    findByPostId(postId) {
+        try {
+            const comments = this.findAll();
+            const commentsInPost = comments
+            .filter(comment => comment.post_id === Number(postId))
+            .map(comment => {
+                const user = User.findById(comment.user_id);
+                return {
+                    ...comment,
+                    author: {
+                        nickname: user.nickname,
+                        profile_image: user.profile_image
+                    }
+                };
+            });
+
+            return commentsInPost ? commentsInPost : null;
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
 }
 
-module.exports = new Post();
+module.exports = new Comment();
