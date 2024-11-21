@@ -82,14 +82,15 @@ class Post {
         try {
             const posts = this.findAll();
             const post = posts.find(post => post.id === Number(id));
+            const user = User.findById(post.user_id);
             const comments = Comment.findByPostId(post.id);
 
             const postDetails = {
                 post_id: post.id,
                 title: post.title,
                 post_author: {
-                    nickname : post.author.nickname,
-                    profile_image : post.author.profile_image
+                    nickname : user.nickname,
+                    profile_image : user.profile_image
                 },
                 user_id: post.user_id,
                 post_modified_at: post.modified_at,
@@ -102,6 +103,7 @@ class Post {
             }
             return postDetails ? postDetails : null;           
         }catch(error) {
+            console.error(error);
             throw new InternalServerError();
         }
     }
