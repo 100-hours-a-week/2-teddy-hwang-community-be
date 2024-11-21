@@ -18,7 +18,7 @@ class Post {
             //전체 글을 순회하면서 유저 정보 추가
             const postsWithUser = posts.map(post => {
                 const user = User.findById(post.user_id);
-                const { user_id, image, created_at, ...withoutPostInfo} = post;
+                const { image, created_at, ...withoutPostInfo} = post;
                 return {
                     ...withoutPostInfo,
                     author: {
