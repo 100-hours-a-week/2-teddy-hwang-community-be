@@ -90,6 +90,7 @@ class Post {
                     nickname : post.author.nickname,
                     profile_image : post.author.profile_image
                 },
+                user_id: post.user_id,
                 post_modified_at: post.modified_at,
                 post_image: post.image,
                 content: post.content,
