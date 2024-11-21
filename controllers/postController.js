@@ -10,7 +10,7 @@ const createPost = async (req, res, next) => {
             image, 
             user_id } = req.body;
         
-        if(!title && !content && !user_id) {
+        if(!title || !content || !user_id) {
             next(new BadRequest());
         }
 
@@ -56,7 +56,7 @@ const updatePost = async (req, res, next) => {
             image, 
             user_id } = req.body;
         
-        if(!title && !content && !user_id) {
+        if(!title || !content || !user_id) {
             next(new BadRequest());
         }
         const postData = {
