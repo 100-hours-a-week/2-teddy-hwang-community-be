@@ -43,8 +43,30 @@ const removeLike = async (req, res, next) => {
         next(new InternalServerError());
     }
 }
+//좋아요 상태 확인
+const isLikedByUser = async (req, res, next) => {
+    try {
+        const postId = req.params.post_id;
+        const userId = req.body.user_id;
+
+        if(!userId || !postId) {
+            next(new BadRequest());
+        }
+
+        const like = await LikeModel.isLikedByUser(postId, userId);
+
+        res.status(201).json({
+            message: '좋아요 상태 확인을 성공했습니다.',
+            is_liked: like
+        })
+        
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
 
 module.exports = {
     addLike,
-    removeLike
+    removeLike,
+    isLikedByUser
 }
