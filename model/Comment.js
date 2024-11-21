@@ -59,6 +59,30 @@ class Comment {
             throw new InternalServerError();
         }
     }
+    //댓글 수정
+    updateComment(id, commentData) {
+        try {
+            const comments = this.findAll();
+            const commentIndex = comments.findIndex(comment => comment.id === Number(id));
+
+            if(commentIndex === -1) {
+                throw new Error('댓글을 찾을 수 없습니다.');
+            }
+            //유저 정보 수정
+            const updatedComment = {
+                ...comments[commentIndex],
+                ...commentData
+            };
+            //배열에 반영
+            comments[commentIndex] = updatedComment;
+
+            fs.writeFileSync(this.filePath, JSON.stringify(comments, null, 2), 'utf8');
+
+            return updatedComment;
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
 }
 
 module.exports = new Comment();

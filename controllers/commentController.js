@@ -38,7 +38,39 @@ const timestamp = () => {
     // 문자열로 바꿔주고 T를 빈칸으로 바꿔주면 yyyy-mm-dd hh:mm:ss 이런 형식 나옴
     return today.toISOString().replace("T", " ").substring(0, 19);
 }
+//댓글 수정
+const updateComment = async (req, res, next) => {
+    try {
+        const id = req.params.comment_id;
+        const { 
+            content, 
+            post_id, 
+            user_id } = req.body;
+        
+        if(!content) {
+            next(new BadRequest());
+        }
+        const commentData = {
+            content,
+            modified_at: timestamp(),
+            user_id,
+            post_id
+        };
+
+        const comment = await CommentModel.updateComment(id, commentData);
+        
+        res.status(200).json({
+            message: '댓글 수정을 성공했습니다.',
+            data: {
+                comment_id: comment.id
+            }
+        });
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
 
 module.exports = {
-    createComment
+    createComment,
+    updateComment
 }
