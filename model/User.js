@@ -65,8 +65,9 @@ class User {
     save(userData) {
         try {
             const users = this.findAll();
+            const userId = users.length > 0 ? Math.max(...users.map(user => user.id)) + 1 : 1;
             const newUser = {
-                id: users.length + 1,
+                id: userId,
                 ...userData
             };
             users.push(newUser);
@@ -155,6 +156,27 @@ class User {
             return user !== undefined;
         }catch(error) {
             throw new InternalServerError();
+        }
+    }
+    //회원 탈퇴
+    deleteUser(id) {
+        try {
+            const users = this.findAll();
+            const userIndex = users.findIndex(user => user.id === Number(id));
+
+            // 해당 유저가 없으면 에러 발생
+            if (userIndex === -1) {
+                throw new BadRequest();
+            }
+
+            // 유저 삭제
+            users.splice(userIndex, 1);
+
+            // JSON 파일에 업데이트
+            fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
+
+        } catch (error) {
+            throw error instanceof BadRequest ? error : new InternalServerError();
         }
     }
 }
