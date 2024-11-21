@@ -5,7 +5,7 @@ const createComment = async (req, res, next) => {
     try {
         const {content, user_id, post_id} = req.body;
 
-        if(!content || !user_id || post_id) {
+        if(!content || !user_id || !post_id) {
             next(new BadRequest());
         }
 
