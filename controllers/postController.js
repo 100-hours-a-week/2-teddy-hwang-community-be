@@ -84,11 +84,31 @@ const getAllPosts = async (req, res, next) => {
     try {
         const posts = await PostModel.findAll();
 
+        if(!posts) {
+            next(new BadRequest());
+        }
+
         res.status(200).json({
             message: '게시글 목록 조회를 성공했습니다.',
-            data: [
-                posts
-            ]
+            data: posts
+        });
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
+//글 상세 조회
+const getOnePost = async (req, res, next) => {
+    try {
+        const id = req.params.post_id;
+        const post = await PostModel.findById(id);
+
+        if(!post) {
+            next(new BadRequest());
+        }
+
+        res.status(200).json({
+            message: '게시글 상세 조회를 성공했습니다.',
+            data: post   
         });
     }catch(error) {
         next(new InternalServerError());
@@ -98,5 +118,6 @@ const getAllPosts = async (req, res, next) => {
 module.exports = {
     createPost,
     updatePost,
-    getAllPosts
+    getAllPosts,
+    getOnePost
 }

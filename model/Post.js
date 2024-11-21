@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const User = require('./User');
+const Comment = require('./Comment');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
 class Post {
@@ -75,6 +76,34 @@ class Post {
             throw new InternalServerError();
         }
     }
+    //글 상세 조회
+    findById(id) {
+        try {
+            const posts = this.findAll();
+            const post = posts.find(post => post.id === Number(id));
+            const comments = Comment.findByPostId(post.id);
+
+            const postDetails = {
+                post_id: post.id,
+                title: post.title,
+                post_author: {
+                    nickname : post.author.nickname,
+                    profile_image : post.author.profile_image
+                },
+                post_modified_at: post.modified_at,
+                post_image: post.image,
+                content: post.content,
+                like_count: post.like_count,
+                view_count: post.view_count,
+                comment_count: post.comment_count,
+                comments: comments
+            }
+            return postDetails ? postDetails : null;           
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
+
     
 }
 
