@@ -177,7 +177,7 @@ class User {
 
             return true;
         } catch (error) {
-            throw error instanceof BadRequest ? error : new InternalServerError();
+            throw new InternalServerError();
         }
     }
 }
