@@ -199,8 +199,29 @@ const checkPasswordMatch = async (req, res, next) => {
     }catch(error) {
         return next(new InternalServerError());
     }
-
 }
+//회원 탈퇴
+const deleteUser = async (req, res, next) => {
+    try {
+        const id = req.params.user_id;
+    
+        const user = await UserModel.deleteUser(id);
+
+        if(user) {
+            res.status(200).json({
+                message: '회원 탈퇴를 성공했습니다.',
+                data: {
+                    user_id: id
+                }
+            });
+        }else {
+            next(new BadRequest());
+        }
+    }catch(error) {
+        return next(new InternalServerError());
+    }
+}
+
 
 module.exports = {
      createUser, 
@@ -210,5 +231,6 @@ module.exports = {
      updatePassword,
      existsByEmail,
      existsByNickname,
-     checkPasswordMatch
+     checkPasswordMatch,
+     deleteUser
 };

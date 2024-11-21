@@ -175,6 +175,7 @@ class User {
             // JSON 파일에 업데이트
             fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
 
+            return true;
         } catch (error) {
             throw error instanceof BadRequest ? error : new InternalServerError();
         }

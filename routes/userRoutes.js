@@ -1,5 +1,5 @@
 const express = require('express');
-const { createUser, login, getUserDetails, updateUserInfo, updatePassword, existsByEmail, existsByNickname, checkPasswordMatch } = require('../controllers/userController');
+const { createUser, login, getUserDetails, updateUserInfo, updatePassword, existsByEmail, existsByNickname, checkPasswordMatch, deleteUser } = require('../controllers/userController');
 
 const router = express.Router();
 
@@ -14,5 +14,6 @@ router.get('/:user_id/:password', checkPasswordMatch);
 router.patch('/:user_id/profile', updateUserInfo);
 router.patch('/:user_id/password', updatePassword);
 
+router.delete('/:user_id', deleteUser);
 
 module.exports = router;
