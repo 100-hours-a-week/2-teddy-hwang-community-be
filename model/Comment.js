@@ -29,6 +29,17 @@ class Comment {
                 ...commentData
             };
             comments.push(newComment);
+            //댓글 추가 후 모든 게시글 정보 가져오기
+            const Post = require('./Post');
+            const posts = Post.findAll();
+            const post = posts.find(post => post.id === commentData.post_id);
+            
+            if(post) {
+                post.comment_count++;
+
+                fs.writeFileSync(path.join(__dirname, '../data/posts.json'), JSON.stringify(posts, null, 2), 'utf8');
+            }
+
             
             fs.writeFileSync(this.filePath, JSON.stringify(comments, null, 2), 'utf8');
             
