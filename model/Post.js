@@ -40,8 +40,9 @@ class Post {
     createPost(postData) {
         try {
             const posts = this.findAll();
+            const postId = posts.length > 0 ? Math.max(...posts.map(post => post.id)) + 1 : 1;
             const newPost = {
-                id: posts.length + 1,
+                id: postId,
                 ...postData
             };
             posts.push(newPost);
