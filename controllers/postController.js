@@ -82,7 +82,7 @@ const updatePost = async (req, res, next) => {
 //전체 글 조회
 const getAllPosts = async (req, res, next) => {
     try {
-        const posts = await PostModel.findAll();
+        const posts = await PostModel.findAllWithUser();
 
         if(!posts) {
             next(new BadRequest());

@@ -13,28 +13,28 @@ class Post {
         try {
             const data = fs.readFileSync(this.filePath, 'utf8');
             const posts =  data ? JSON.parse(data) : [];
-            
-
-            //전체 글을 순회하면서 유저 정보 추가
-            const postsWithUser = posts.map(post => {
-                const user = User.findById(post.user_id);
-                const { image, created_at, ...withoutPostInfo} = post;
-                return {
-                    ...withoutPostInfo,
-                    author: {
-                        nickname: user.nickname,
-                        profile_image: user.profile_image
-                    }
-                }
-            });
-
-            return postsWithUser;
+            return posts;
         }catch(error) {
             if(error.code === 'ENOENT') {
                 return [];
             }
             throw error;
         }
+    }
+    //사용자 정보를 추가한 데이터를 반환하는 메서드
+    findAllWithUser() {
+        const posts = this.findAll();
+
+        return posts.map(post => {
+            const user = User.findById(post.user_id);
+            return {
+                ...post,
+                author: {
+                    nickname: user.nickname,
+                    profile_image: user.profile_image,
+                }
+            };
+        });
     }
     //글 생성
     createPost(postData) {
