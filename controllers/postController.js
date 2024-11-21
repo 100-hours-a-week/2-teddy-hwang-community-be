@@ -31,7 +31,7 @@ const createPost = async (req, res, next) => {
         res.status(201).json({
             message: '게시글 작성을 성공했습니다.',
             data: {
-                post_id: { id }
+                post_id: id 
             }
         });
     }catch(error) {

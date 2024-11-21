@@ -23,7 +23,7 @@ const createComment = async (req, res, next) => {
         res.status(201).json({
             message : '댓글 작성을 성공했습니다.',
             data : {
-                comment_id : { id } 
+                comment_id : id 
             }
         });
     }catch(error) {
