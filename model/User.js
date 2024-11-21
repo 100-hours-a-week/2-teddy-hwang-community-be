@@ -164,15 +164,15 @@ class User {
             const users = this.findAll();
             const userIndex = users.findIndex(user => user.id === Number(id));
 
-            // 해당 유저가 없으면 에러 발생
+            //해당 유저가 없으면 에러 발생
             if (userIndex === -1) {
                 throw new BadRequest();
             }
 
-            // 유저 삭제
+            //유저 삭제
             users.splice(userIndex, 1);
 
-            // JSON 파일에 업데이트
+            //JSON 파일에 업데이트
             fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
 
             return true;
