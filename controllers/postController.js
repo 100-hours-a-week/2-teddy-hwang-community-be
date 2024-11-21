@@ -114,10 +114,32 @@ const getOnePost = async (req, res, next) => {
         next(new InternalServerError());
     }
 }
+//글 삭제
+const deletePost = async (req, res, next) => {
+    try {
+        const id = req.params.post_id;
+    
+        const post = await PostModel.deletePost(id);
+
+        if(post) {
+            res.status(200).json({
+                message: '게시글 삭제를 성공했습니다.',
+                data: {
+                    post_id: id
+                }
+            });
+        }else {
+            next(new BadRequest());
+        }
+    }catch(error) {
+        return next(new InternalServerError());
+    }
+}
 
 module.exports = {
     createPost,
     updatePost,
     getAllPosts,
-    getOnePost
+    getOnePost,
+    deletePost
 }

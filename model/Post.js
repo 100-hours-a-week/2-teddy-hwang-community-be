@@ -105,8 +105,28 @@ class Post {
             throw new InternalServerError();
         }
     }
+    //글 삭제
+    deletePost(id) {
+        try {
+            const posts = this.findAll();
+            const postIndex = posts.findIndex(post => post.id === Number(id));
 
-    
+            //해당 글이 없으면 에러 발생
+            if (postIndex === -1) {
+                throw new BadRequest();
+            }
+
+            //글 삭제
+            posts.splice(postIndex, 1);
+
+            //JSON 파일에 업데이트
+            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
+
+            return true;
+        } catch (error) {
+            throw new InternalServerError();
+        }
+    }
 }
 
 module.exports = new Post();
