@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const User = require('./User');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
 class Post {
@@ -10,7 +11,23 @@ class Post {
     findAll() {
         try {
             const data = fs.readFileSync(this.filePath, 'utf8');
-            return data ? JSON.parse(data) : [];
+            const posts =  data ? JSON.parse(data) : [];
+            
+
+            //전체 글을 순회하면서 유저 정보 추가
+            const postsWithUser = posts.map(post => {
+                const user = User.findById(post.user_id);
+                const { user_id, image, created_at, ...withoutPostInfo} = post;
+                return {
+                    ...withoutPostInfo,
+                    author: {
+                        nickname: user.nickname,
+                        profile_image: user.profile_image
+                    }
+                }
+            });
+
+            return postsWithUser;
         }catch(error) {
             if(error.code === 'ENOENT') {
                 return [];

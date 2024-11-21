@@ -79,8 +79,24 @@ const updatePost = async (req, res, next) => {
         next(new InternalServerError());
     }
 }
+//전체 글 조회
+const getAllPosts = async (req, res, next) => {
+    try {
+        const posts = await PostModel.findAll();
+
+        res.status(200).json({
+            message: '게시글 목록 조회를 성공했습니다.',
+            data: [
+                posts
+            ]
+        });
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
 
 module.exports = {
     createPost,
-    updatePost
+    updatePost,
+    getAllPosts
 }
