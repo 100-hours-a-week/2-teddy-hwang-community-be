@@ -89,8 +89,31 @@ const findByUserId = async (req, res, next) => {
     }
 }
 
+//댓글 삭제
+const deleteComment = async (req, res, next) => {
+    try {
+        const id = req.params.comment_id;
+
+        const comment = await CommentModel.deleteComment(id);
+
+        if(!comment) {
+            next(new BadRequest());
+        }
+        
+        res.status(200).json({
+            message: '댓글 삭제를 성공했습니다.',
+            data: {
+                comment_id: id
+            }
+        });
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
+
 module.exports = {
     createComment,
     updateComment,
-    findByUserId
+    findByUserId,
+    deleteComment
 }

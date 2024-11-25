@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 const User = require('./User');
-const Post = require('./Post');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
 class Comment {
@@ -111,7 +110,39 @@ class Comment {
             throw new InternalServerError();
         }
     }
+    //댓글 삭제
+    deleteComment(id) {
+        try {
+            const comments = this.findAll();
+            const commentIndex = comments.findIndex(comment => comment.id === Number(id));
 
+            //해당 댓글이 없으면 에러 발생
+            if (commentIndex === -1) {
+                throw new BadRequest();
+            }
+
+            //해당 글 댓글 수 감소
+            const postId = comments[commentIndex].post_id;
+            const Post = require('./Post');
+            const posts = Post.findAll();
+            const postIndex = posts.findIndex(post => post.id === Number(postId));
+
+            if (postIndex !== -1) {
+                posts[postIndex].comment_count = Math.max(0, posts[postIndex].comment_count - 1); // 댓글 수 감소
+                fs.writeFileSync(path.join(__dirname, '../data/posts.json'), JSON.stringify(posts, null, 2), 'utf8');
+            }
+
+            //댓글 삭제
+            comments.splice(commentIndex, 1);
+
+            //JSON 파일에 업데이트
+            fs.writeFileSync(this.filePath, JSON.stringify(comments, null, 2), 'utf8');
+
+            return true;
+        } catch (error) {
+            throw new InternalServerError();
+        }
+    }
 }
 
 module.exports = new Comment();
