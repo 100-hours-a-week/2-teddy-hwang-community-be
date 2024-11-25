@@ -8,8 +8,8 @@ const userRoutes = require('./routes/userRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const likeRoutes = require('./routes/likeRoutes');
 
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
 
 app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes);
