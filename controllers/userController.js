@@ -153,10 +153,14 @@ const existsByEmail = async (req, res, next) => {
 
         if(!user) {
             res.status(200).json({
-                message: '중복된 이메일이 없습니다.'
+                message: '중복된 이메일이 없습니다.',
+                data: true
             });
         }else {
-            return next(new BadRequest());
+            res.status(200).json({
+                message: '중복된 이메일이 있습니다.',
+                data: false
+            });
         }
     }catch(error) {
         return next(new InternalServerError());
@@ -171,10 +175,14 @@ const existsByNickname = async (req, res, next) => {
 
         if(!user) {
             res.status(200).json({
-                message: '중복된 닉네임이 없습니다.'
+                message: '중복된 닉네임이 없습니다.',
+                data: true
             });
         }else {
-            return next(new BadRequest());
+            res.status(200).json({
+                message: '중복된 닉네임이 있습니다.',
+                data: false
+            });
         }
     }catch(error) {
         return next(new InternalServerError());
@@ -190,10 +198,14 @@ const checkPasswordMatch = async (req, res, next) => {
 
         if(user) {
             res.status(200).json({
-                message: '기존 비밀번호와 일치합니다.'
+                message: '기존 비밀번호와 일치합니다.',
+                data: true
             });
         }else {
-            return next(new BadRequest());
+            res.status(200).json({
+                message: '기존 비밀번호와 일치하지 않습니다.',
+                data: false
+            });
         }
 
     }catch(error) {
