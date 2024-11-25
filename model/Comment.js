@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const User = require('./User');
+const Post = require('./Post');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
 class Comment {
@@ -94,6 +95,23 @@ class Comment {
             throw new InternalServerError();
         }
     }
+    //해당 유저가 쓴 댓글인지 조회
+    findByUserId(userId) {
+        try {
+            const comments = this.findAll();
+            const userComments = comments
+            .filter(comment => comment.user_id === Number(userId))
+            .map(comment => ({
+                comment_id: comment.id,
+                content: comment.content
+            }));
+
+            return userComments ? userComments : null;
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
+
 }
 
 module.exports = new Comment();

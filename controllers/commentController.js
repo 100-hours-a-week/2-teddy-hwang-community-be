@@ -69,8 +69,28 @@ const updateComment = async (req, res, next) => {
         next(new InternalServerError());
     }
 }
+//해당 댓글 조회
+const findByUserId = async (req, res, next) => {
+    try {
+        const userId = req.body.user_id;
+
+        const comments = await CommentModel.findByUserId(userId);
+
+        if(!comments) {
+            next(new BadRequest());
+        }
+        
+        res.status(200).json({
+            message: '댓글 조회를 성공했습니다.',
+            data: comments
+        });
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
 
 module.exports = {
     createComment,
-    updateComment
+    updateComment,
+    findByUserId
 }
