@@ -26,7 +26,7 @@ const addLike = async (req, res, next) => {
 const removeLike = async (req, res, next) => {
     try {
         const postId = req.params.post_id;
-        const userId = req.body.user_id;
+        const userId = req.query.user_id;
 
         if(!userId || !postId) {
             next(new BadRequest());
@@ -34,7 +34,7 @@ const removeLike = async (req, res, next) => {
 
         const like = await LikeModel.removeLike(postId, userId);
 
-        res.status(201).json({
+        res.status(200).json({
             message: '좋아요 취소를 성공했습니다.',
             post_id: like
         })
@@ -48,7 +48,6 @@ const isLikedByUser = async (req, res, next) => {
     try {
         const postId = req.params.post_id;
         const userId = req.query.userId;
-        console.log(typeof(postId)+ " "+ typeof(userId));
 
         if(!userId || !postId) {
             next(new BadRequest());
