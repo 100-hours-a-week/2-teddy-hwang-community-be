@@ -55,7 +55,7 @@ const isLikedByUser = async (req, res, next) => {
 
         const like = await LikeModel.isLikedByUser(postId, userId);
 
-        res.status(201).json({
+        res.status(200).json({
             message: '좋아요 상태 확인을 성공했습니다.',
             is_liked: like
         })
