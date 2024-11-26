@@ -106,7 +106,7 @@ class Like {
         const likes = this.readLikesFile();
         
         // likes 배열에서 해당 게시글과 사용자에 대한 좋아요가 존재하는지 확인
-        const existLike = likes.find(like => like.post_id === Number(postId) && like.user_id === userId);
+        const existLike = likes.find(like => like.post_id === Number(postId) && like.user_id === Number(userId));
         
         return existLike !== undefined; // 좋아요가 존재하면 true, 없으면 false 반환
     }
