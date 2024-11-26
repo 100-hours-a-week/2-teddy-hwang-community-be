@@ -56,21 +56,25 @@ const login = async (req, res, next) => {
         const user = await UserModel.findByEmail(email);
 
         if(!user){
-            return next(new BadRequest());
+            return res.status(401).json({
+                message: '이메일이 존재하지 않습니다.'
+            });;
         }
         //저장된 비밀번호와 입력된 비밀번호 비교
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if(!isPasswordValid){
-            return next(new BadRequest());
+            return res.status(401).json({
+                message: '비밀번호가 일치하지 않습니다.'
+            });
         }
-
+        
         const { id } = user;
-
+        
         res.status(200).json({
             message: '로그인을 성공했습니다.',
             data: {
-                user_id: { id }
+                user_id: id 
             }
         });
     }catch(error) {
