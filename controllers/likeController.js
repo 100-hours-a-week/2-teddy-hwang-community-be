@@ -26,7 +26,7 @@ const addLike = async (req, res, next) => {
 const removeLike = async (req, res, next) => {
     try {
         const postId = req.params.post_id;
-        const userId = req.query.user_id;
+        const userId = req.query.userId;
 
         if(!userId || !postId) {
             next(new BadRequest());
