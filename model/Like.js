@@ -82,7 +82,7 @@ class Like {
             const posts = this.readPostsFile();
     
             //좋아요가 존재하지 않는 경우 에러 처리
-            const updatedLikes = likes.filter(like => !(like.post_id === Number(postId) && like.user_id === userId));
+            const updatedLikes = likes.filter(like => !(like.post_id === Number(postId) && like.user_id === Number(userId)));
             if (updatedLikes.length === likes.length) {
                 throw new BadRequest('좋아요를 누르지 않았습니다.');
             }
