@@ -23,9 +23,10 @@ class Comment {
     createComment(commentData) {
         try {
             const comments = this.findAll();
+            const commentId = comments.length > 0 ? Math.max(...comments.map(comment => comment.id)) + 1 : 1;
             
             const newComment = {
-                id: comments.length + 1,
+                id: commentId,
                 ...commentData
             };
             comments.push(newComment);
