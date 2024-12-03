@@ -2,7 +2,6 @@ const { BadRequest, InternalServerError } = require('../middleware/customError')
 const UserModel = require('../model/User');
 const bcrypt = require('bcrypt');
 
-
 //사용자 생성
 const createUser = async (req, res, next) => {
     try {
@@ -31,12 +30,10 @@ const createUser = async (req, res, next) => {
             profile_image: profile_image || ''
         });
 
-        const { id } = newUser;
-
         res.status(201).json({
             message: '회원가입을 성공했습니다.',
             data: {
-                user_id: { id }
+                user_id: newUser.id
             }
         });
     }catch(error) {
@@ -69,14 +66,27 @@ const login = async (req, res, next) => {
             });
         }
         
-        const { id } = user;
-        
-        res.status(200).json({
-            message: '로그인을 성공했습니다.',
-            data: {
-                user_id: id 
-            }
+        //유저 정보 세션 저장
+        req.session.user = {
+            id: user.id,
+            email: user.email,
+            nickname: user.nickname,      
+            lastLogin: new Date()    
+        };
+    
+        //세션 저장이 완료된 후 응답
+        req.session.save((err) => {
+            if (err) {
+                return next(new InternalServerError());
+            }       
+            res.status(200).json({
+                message: '로그인을 성공했습니다.',
+                data: {
+                    user_id: user.id
+                }
+            });
         });
+
     }catch(error) {
         return next(new InternalServerError());
     }
