@@ -134,6 +134,16 @@ class Post {
             throw new InternalServerError();
         }
     }
+    //특정 게시글의 좋아요 수 가져오기
+    getLikeCount(postId) {
+        try {          
+            const posts = this.findAll();
+            const post = posts.find(post => post.id === Number(postId));
+            return post ? post.like_count : 0;
+        } catch (error) {
+            throw new InternalServerError();
+        }      
+    }
 }
 
 module.exports = new Post();
