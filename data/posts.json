@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "title": "게시글 제목입니다.수정본111",
+    "content": "게시글 내용입니다.수정본111",
+    "image": "girl.jpg",
+    "created_at": "2024-11-21 22:38:51",
+    "modified_at": "2024-12-02 15:39:57",
+    "like_count": 0,
+    "view_count": 651,
+    "comment_count": 18,
+    "user_id": 1
+  },
+  {
+    "id": 3,
+    "title": "제목 수정3333333",
+    "content": "내용 수정33333333",
+    "image": "https://image.kr/img.jpg",
+    "created_at": "2024-11-21 22:39:01",
+    "modified_at": "2024-11-21 22:39:21",
+    "like_count": 1,
+    "view_count": 142,
+    "comment_count": 2,
+    "user_id": 4
+  },
+  {
+    "id": 4,
+    "title": "제목 수정 444444",
+    "content": "내용 수정 44444",
+    "image": "https://image.kr/img.jpg",
+    "created_at": "2024-11-21 22:49:14",
+    "modified_at": "2024-11-21 22:51:35",
+    "like_count": 0,
+    "view_count": 19,
+    "comment_count": 0,
+    "user_id": 4
+  },
+  {
+    "id": 5,
+    "title": "게시글4444444444",
+    "content": "메롱메롱메롱",
+    "image": "",
+    "created_at": "2024-11-26 22:37:59",
+    "modified_at": "2024-11-26 22:37:59",
+    "like_count": 0,
+    "view_count": 8,
+    "comment_count": 0,
+    "user_id": 1
+  },
+  {
+    "id": 6,
+    "title": "asdwwwww",
+    "content": "asd2wwww",
+    "image": "",
+    "created_at": "2024-12-02 15:48:36",
+    "modified_at": "2024-12-02 15:48:36",
+    "like_count": 0,
+    "view_count": 3,
+    "comment_count": 0,
+    "user_id": 1
+  },
+  {
+    "id": 7,
+    "title": "2번 유s저가 작성했습니다.",
+    "content": "222222222222",
+    "image": "",
+    "created_at": "2024-12-03 13:45:25",
+    "modified_at": "2024-12-03 13:45:25",
+    "like_count": 0,
+    "view_count": 25,
+    "comment_count": 4,
+    "user_id": 2
+  }
+]

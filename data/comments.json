@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "content": "유저1 글1 1번째 작성223334",
+    "created_at": "2024-11-22 01:52:48",
+    "modified_at": "2024-11-26 22:46:02",
+    "user_id": 1,
+    "post_id": 1
+  },
+  {
+    "id": 3,
+    "content": "댓글작성입니다아아아아아",
+    "created_at": "2024-11-27 09:27:28",
+    "modified_at": "2024-11-27 09:27:28",
+    "user_id": 1,
+    "post_id": 1
+  },
+  {
+    "id": 4,
+    "content": "ㅇㅇㅇㅇㅇㅇ",
+    "created_at": "2024-12-03 13:46:51",
+    "modified_at": "2024-12-03 13:46:51",
+    "user_id": 1,
+    "post_id": 7
+  },
+  {
+    "id": 5,
+    "content": "adadad",
+    "created_at": "2024-12-03 13:47:47",
+    "modified_at": "2024-12-03 13:47:47",
+    "user_id": 1,
+    "post_id": 7
+  },
+  {
+    "id": 6,
+    "content": "ddddd",
+    "created_at": "2024-12-03 13:50:02",
+    "modified_at": "2024-12-03 13:50:02",
+    "user_id": 2,
+    "post_id": 7
+  },
+  {
+    "id": 7,
+    "content": "asdasd",
+    "created_at": "2024-12-03 13:54:17",
+    "modified_at": "2024-12-03 13:54:17",
+    "user_id": 2,
+    "post_id": 8
+  },
+  {
+    "id": 8,
+    "content": "asdasd",
+    "created_at": "2024-12-03 16:39:56",
+    "modified_at": "2024-12-03 16:39:56",
+    "user_id": 2,
+    "post_id": 7
+  },
+  {
+    "id": 9,
+    "content": "ㅇㅇㅇ",
+    "created_at": "2024-12-03 17:14:13",
+    "modified_at": "2024-12-03 17:14:13",
+    "user_id": 2,
+    "post_id": 1
+  }
+]
