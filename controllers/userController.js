@@ -95,7 +95,8 @@ const login = async (req, res, next) => {
 const getUserDetails = async (req, res, next) => {
     try {
         //경로 파라미터 추출
-        const id = req.params.user_id;
+        const id = req.session.user.id;
+        console.log(id);
 
         const user = await UserModel.findById(id);
 
@@ -116,7 +117,7 @@ const getUserDetails = async (req, res, next) => {
 const updateUserInfo = async (req, res, next) => {
     try {
         //경로 파라미터 추출
-        const id = req.params.user_id;
+        const id = req.session.user.id;
         const { nickname, profile_image } = req.body;
 
         if(!nickname) {
@@ -139,7 +140,7 @@ const updateUserInfo = async (req, res, next) => {
 const updatePassword = async (req, res, next) => {
     try {
         //경로 파라미터 추출
-        const id = req.params.user_id;
+        const id = req.session.user.id;
         const password = req.body.password;
 
         if(!password) {
@@ -205,7 +206,7 @@ const existsByNickname = async (req, res, next) => {
 //비밀번호 변경시 기존 암호가 맞는지 확인
 const checkPasswordMatch = async (req, res, next) => {
     try {
-        const id = req.params.user_id;
+        const id = req.session.user.id;
         const password = req.params.password;
 
         const user = await UserModel.checkPasswordMatch(id, password);
