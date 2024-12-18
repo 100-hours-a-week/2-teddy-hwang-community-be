@@ -14,7 +14,7 @@ const commentRoutes = require('./routes/commentRoutes');
 app.use(cors({
     origin: [
         process.env.CORS_ORIGIN,
-        'https://f7d0-112-148-157-186.ngrok-free.app'
+        process.env.CORS_EC2
     ],
     credentials: true
 }));
