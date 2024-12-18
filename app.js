@@ -9,10 +9,13 @@ const app = express();
 const postRoutes = require('./routes/postRoutes');
 const userRoutes = require('./routes/userRoutes');
 const commentRoutes = require('./routes/commentRoutes');
-const likeRoutes = require('./routes/likeRoutes');
+
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: [
+        process.env.CORS_ORIGIN,
+        'https://f7d0-112-148-157-186.ngrok-free.app'
+    ],
     credentials: true
 }));
 
@@ -31,14 +34,14 @@ app.use(session({
 
 app.use(express.json());
 
-app.use('/api/posts', postRoutes, likeRoutes);
+app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/comments', commentRoutes);
 
 app.use((err, req, res, next) => {
-    const statusCode = err.statusCode;
+    const statusCode = err.statusCode || 500;
     res.status(statusCode).json({
-        message: err.message,
+        message: err.message || 'Internal Server Error',
         data: null
     });
 });

@@ -40,14 +40,6 @@
     "post_id": 7
   },
   {
-    "id": 7,
-    "content": "asdasd",
-    "created_at": "2024-12-03 13:54:17",
-    "modified_at": "2024-12-03 13:54:17",
-    "user_id": 2,
-    "post_id": 8
-  },
-  {
     "id": 8,
     "content": "asdasd",
     "created_at": "2024-12-03 16:39:56",
@@ -62,5 +54,21 @@
     "modified_at": "2024-12-03 17:14:13",
     "user_id": 2,
     "post_id": 1
+  },
+  {
+    "id": 10,
+    "content": "asdasdddd",
+    "created_at": "2024-12-05 19:26:39",
+    "modified_at": "2024-12-16 17:12:19",
+    "user_id": 1,
+    "post_id": 1
+  },
+  {
+    "id": 11,
+    "content": "ㅁㄹㅁㄹㅁㄹ",
+    "created_at": "2024-12-18 11:25:15",
+    "modified_at": "2024-12-18 11:25:15",
+    "user_id": 1,
+    "post_id": 13
   }
 ]

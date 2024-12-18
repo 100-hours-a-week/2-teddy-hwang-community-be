@@ -20,15 +20,13 @@ class InternalServerError extends CustomError{
 
 class UnauthorizedError extends Error {
     constructor(message = '인증되지 않은 사용자입니다.') {
-        super(message);
-        this.status = 401;
+        super(message, 401);
     }
 }
 
 class ForbiddenError extends Error {
     constructor(message = '접근 권한이 없습니다.') {
-        super(message);
-        this.status = 403;
+        super(message, 403);
     }
 }
 

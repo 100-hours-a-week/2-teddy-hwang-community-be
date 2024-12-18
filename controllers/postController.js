@@ -1,5 +1,6 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
 const PostModel = require('../model/Post');
+const { upload } = require('../config/s3Config');
 
 //글생성
 const createPost = async (req, res, next) => {
@@ -7,8 +8,11 @@ const createPost = async (req, res, next) => {
         const { 
             title, 
             content, 
-            image, 
             user_id } = req.body;
+    
+        const userId = Number(user_id);
+
+        const imageUrl = req.file ? req.file.location : null;
         
         if(!title || !content || !user_id) {
             next(new BadRequest());
@@ -17,13 +21,13 @@ const createPost = async (req, res, next) => {
         const newPost = await PostModel.createPost({
             title,
             content,
-            image,
+            image: imageUrl,
             created_at : timestamp(), 
             modified_at : timestamp(), 
             like_count : 0, 
             view_count : 0, 
             comment_count : 0, 
-            user_id
+            user_id: userId
         });
 
         const { id } = newPost;
@@ -31,11 +35,12 @@ const createPost = async (req, res, next) => {
         res.status(201).json({
             message: '게시글 작성을 성공했습니다.',
             data: {
-                post_id: id 
+                post_id: id,
+                image_url: imageUrl
             }
         });
     }catch(error) {
-        next(new InternalServerError());
+       return next(new InternalServerError());
     }
 }
 //날짜 변환 함수
@@ -137,8 +142,8 @@ const deletePost = async (req, res, next) => {
 }
 
 module.exports = {
-    createPost,
-    updatePost,
+    createPost: [upload.single('image'), createPost],
+    updatePost: [upload.single('image'), updatePost],
     getAllPosts,
     getOnePost,
     deletePost

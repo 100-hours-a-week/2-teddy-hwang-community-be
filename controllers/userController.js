@@ -96,7 +96,6 @@ const getUserDetails = async (req, res, next) => {
     try {
         //경로 파라미터 추출
         const id = req.session.user.id;
-        console.log(id);
 
         const user = await UserModel.findById(id);
 
