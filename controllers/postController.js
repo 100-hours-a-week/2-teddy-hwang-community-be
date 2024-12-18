@@ -1,6 +1,6 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
 const PostModel = require('../model/Post');
-const { upload } = require('../config/s3Config');
+const { postUpload } = require('../config/s3Config');
 
 //글생성
 const createPost = async (req, res, next) => {
@@ -60,16 +60,20 @@ const updatePost = async (req, res, next) => {
             content, 
             image, 
             user_id } = req.body;
-        
+
+        const userId = Number(user_id);
+
+        const imageUrl = req.file ? req.file.location : null;
+
         if(!title || !content || !user_id) {
             next(new BadRequest());
         }
         const postData = {
             title,
             content,
-            image,
+            image: imageUrl,
             modified_at: timestamp(),
-            user_id
+            user_id: userId
         };
 
         const post = await PostModel.updatePost(id, postData);
@@ -92,7 +96,9 @@ const getAllPosts = async (req, res, next) => {
         if(!posts) {
             next(new BadRequest());
         }
-
+        //전체 글 역순 정렬
+        posts.sort((a, b) => b.id - a.id);
+        
         res.status(200).json({
             message: '게시글 목록 조회를 성공했습니다.',
             data: posts
@@ -142,8 +148,8 @@ const deletePost = async (req, res, next) => {
 }
 
 module.exports = {
-    createPost: [upload.single('image'), createPost],
-    updatePost: [upload.single('image'), updatePost],
+    createPost: [postUpload.single('image'), createPost],
+    updatePost: [postUpload.single('image'), updatePost],
     getAllPosts,
     getOnePost,
     deletePost
