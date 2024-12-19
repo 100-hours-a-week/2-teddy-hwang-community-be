@@ -1,13 +1,17 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
 const UserModel = require('../model/User');
 const bcrypt = require('bcrypt');
+const { userUpload } = require('../config/s3Config');
+
 
 //사용자 생성
 const createUser = async (req, res, next) => {
     try {
-        const { email, password, nickname, profile_image } = req.body;
+        const { email, password, nickname } = req.body;
+        const imageUrl = req.file ? req.file.location : null;
+        
         //사용자 정보가 입력되지 않았을 때
-        if(!email || !password || !nickname || !profile_image) {
+        if(!email || !password || !nickname || !imageUrl) {
             return next(new BadRequest());
         }
 
@@ -27,7 +31,7 @@ const createUser = async (req, res, next) => {
             email,
             password: encryptPassword,
             nickname,
-            profile_image: profile_image || ''
+            profile_image: imageUrl
         });
 
         res.status(201).json({
@@ -250,10 +254,10 @@ const deleteUser = async (req, res, next) => {
 
 
 module.exports = {
-     createUser, 
+     createUser: [userUpload.single('image'), createUser], 
      login, 
      getUserDetails, 
-     updateUserInfo, 
+     updateUserInfo: [userUpload.single('image'), updateUserInfo], 
      updatePassword,
      existsByEmail,
      existsByNickname,
