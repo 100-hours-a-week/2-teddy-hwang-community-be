@@ -111,7 +111,25 @@ const getAllPosts = async (req, res, next) => {
 const getOnePost = async (req, res, next) => {
     try {
         const id = req.params.post_id;
-        const post = await PostModel.findById(id);
+        const post = await PostModel.findByIdWithView(id);
+
+        if(!post) {
+            next(new BadRequest());
+        }
+
+        res.status(200).json({
+            message: '게시글 상세 조회를 성공했습니다.',
+            data: post   
+        });
+    }catch(error) {
+        next(new InternalServerError());
+    }
+}
+//글 상세 조회 조회수 증가x
+const getOnePostWithoutView = async (req, res, next) => {
+    try {
+        const id = req.params.post_id;
+        const post = await PostModel.findByIdWithoutView(id);
 
         if(!post) {
             next(new BadRequest());
@@ -152,5 +170,6 @@ module.exports = {
     updatePost: [postUpload.single('image'), updatePost],
     getAllPosts,
     getOnePost,
+    getOnePostWithoutView,
     deletePost
 }

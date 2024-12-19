@@ -77,13 +77,12 @@ class Post {
             throw new InternalServerError();
         }
     }
-    //글 상세 조회
-    findById(id) {
+    //글 상세 조회 조회수 증가 x
+    findByIdWithoutView(id) {
         try {
             const posts = this.findAll();
             const post = posts.find(post => post.id === Number(id));
-            //조회수 증가
-            post.view_count++;
+
             //변경된 정보 저장
             fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
             
@@ -108,6 +107,22 @@ class Post {
             }
             return postDetails ? postDetails : null;           
         }catch(error) {
+            console.error(error);
+            throw new InternalServerError();
+        }
+    }
+    //글 상세 조회 조회수 증가
+    findByIdWithView(id) {
+        try {
+            const posts = this.findAll();
+            const post = posts.find(post => post.id === Number(id));
+            //조회수 증가
+            post.view_count++;
+            //변경된 정보 저장
+            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
+            
+            return this.findByIdWithoutView(id);
+        } catch(error) {
             console.error(error);
             throw new InternalServerError();
         }
