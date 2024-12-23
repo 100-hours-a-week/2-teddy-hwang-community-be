@@ -58,7 +58,7 @@ const login = async (req, res, next) => {
 
         if(!user){
             return res.status(401).json({
-                message: '이메일이 존재하지 않습니다.'
+                message: '*이메일이 존재하지 않습니다.'
             });;
         }
         //저장된 비밀번호와 입력된 비밀번호 비교
@@ -66,7 +66,7 @@ const login = async (req, res, next) => {
 
         if(!isPasswordValid){
             return res.status(401).json({
-                message: '비밀번호가 일치하지 않습니다.'
+                message: '*비밀번호가 일치하지 않습니다.'
             });
         }
         
@@ -186,13 +186,35 @@ const existsByEmail = async (req, res, next) => {
         return next(new InternalServerError());
     }   
 }
-//닉네임 중복 확인
-const existsByNickname = async (req, res, next) => {  
+//닉네임 중복 확인(유저 수정)
+const existsByNicknameUpdate = async (req, res, next) => {  
     try {
         const id = req.session.user.id;
         const nickname = req.params.nickname;
 
-        const user = await UserModel.existsByNickname(nickname, id);
+        const user = await UserModel.existsByNicknameUpdate(nickname, id);
+
+        if(!user) {
+            res.status(200).json({
+                message: '중복된 닉네임이 없습니다.',
+                data: true
+            });
+        }else {
+            res.status(200).json({
+                message: '중복된 닉네임이 있습니다.',
+                data: false
+            });
+        }
+    }catch(error) {
+        return next(new InternalServerError());
+    }   
+}
+//닉네임 중복 확인(회원가입)
+const existsByNickname = async (req, res, next) => {  
+    try {
+        const nickname = req.params.nickname;
+
+        const user = await UserModel.existsByNickname(nickname);
 
         if(!user) {
             res.status(200).json({
@@ -264,6 +286,7 @@ module.exports = {
      updatePassword,
      existsByEmail,
      existsByNickname,
+     existsByNicknameUpdate,
      checkPasswordMatch,
      deleteUser
 };
