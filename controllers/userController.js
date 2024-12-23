@@ -98,7 +98,6 @@ const login = async (req, res, next) => {
 //회원 정보 조회
 const getUserDetails = async (req, res, next) => {
     try {
-        //경로 파라미터 추출
         const id = req.session.user.id;
 
         const user = await UserModel.findById(id);
@@ -119,20 +118,23 @@ const getUserDetails = async (req, res, next) => {
 //회원 정보 수정
 const updateUserInfo = async (req, res, next) => {
     try {
-        //경로 파라미터 추출
+        const basicProfileImage = "https://kbt-community-s3.s3.ap-northeast-2.amazonaws.com/profile-image.jpg";
         const id = req.session.user.id;
-        const { nickname, profile_image } = req.body;
+        const { nickname } = req.body;
+        const imageUrl = req.file ? req.file.location : basicProfileImage;
 
         if(!nickname) {
             return next(new BadRequest());
         }
         
-        const user = await UserModel.updateUser(id, nickname, profile_image);
+        const user = await UserModel.updateUser(id, nickname, imageUrl);
     
         res.status(200).json({
             message: '회원 정보 수정을 성공했습니다.',
             data: {
-                user_id: user.id
+                user_id: user.id,
+                profile_image: user.profile_image,
+                nickname: user.nickname
             }
         });
     }catch(error) {
@@ -187,9 +189,10 @@ const existsByEmail = async (req, res, next) => {
 //닉네임 중복 확인
 const existsByNickname = async (req, res, next) => {  
     try {
+        const id = req.session.user.id;
         const nickname = req.params.nickname;
 
-        const user = await UserModel.existsByNickname(nickname);
+        const user = await UserModel.existsByNickname(nickname, id);
 
         if(!user) {
             res.status(200).json({
