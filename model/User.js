@@ -139,10 +139,12 @@ class User {
         }
     }
     //닉네임 중복 확인
-    existsByNickname(nickname) {
+    existsByNickname(nickname, userId) {
         try {
             const users = this.findAll();
-            const user = users.find(user => user.nickname === nickname); 
+            const user = users.find(user => 
+                user.nickname === nickname && user.id !== userId
+            ); 
             return user !== undefined;
         }catch(error) {
             throw new InternalServerError();
