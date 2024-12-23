@@ -138,13 +138,23 @@ class User {
             throw new InternalServerError();
         }
     }
-    //닉네임 중복 확인
-    existsByNickname(nickname, userId) {
+    //닉네임 중복 확인(유저 수정)
+    existsByNicknameUpdate(nickname, userId) {
         try {
             const users = this.findAll();
             const user = users.find(user => 
                 user.nickname === nickname && user.id !== userId
             ); 
+            return user !== undefined;
+        }catch(error) {
+            throw new InternalServerError();
+        }
+    }
+    //닉네임 중복 확인(회원가입)
+    existsByNickname(nickname) {
+        try {
+            const users = this.findAll();
+            const user = users.find(user => user.nickname === nickname); 
             return user !== undefined;
         }catch(error) {
             throw new InternalServerError();
