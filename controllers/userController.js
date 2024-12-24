@@ -8,7 +8,7 @@ const { userUpload } = require('../config/s3Config');
 const createUser = async (req, res, next) => {
     try {
         const { email, password, nickname } = req.body;
-        const imageUrl = req.file ? req.file.location : null;
+        const imageUrl = req.file ? req.file.location : "";
         
         //사용자 정보가 입력되지 않았을 때
         if(!email || !password || !nickname || !imageUrl) {
