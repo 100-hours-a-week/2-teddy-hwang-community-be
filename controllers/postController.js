@@ -58,7 +58,6 @@ const updatePost = async (req, res, next) => {
         const { 
             title, 
             content, 
-            image, 
             user_id } = req.body;
 
         const userId = Number(user_id);
