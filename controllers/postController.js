@@ -12,7 +12,7 @@ const createPost = async (req, res, next) => {
     
         const userId = Number(user_id);
 
-        const imageUrl = req.file ? req.file.location : null;
+        const imageUrl = req.file ? req.file.location : "";
         
         if(!title || !content || !user_id) {
             next(new BadRequest());
@@ -63,7 +63,7 @@ const updatePost = async (req, res, next) => {
 
         const userId = Number(user_id);
 
-        const imageUrl = req.file ? req.file.location : null;
+        const imageUrl = req.file ? req.file.location : "";
 
         if(!title || !content || !user_id) {
             next(new BadRequest());
