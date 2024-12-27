@@ -1,197 +1,142 @@
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcrypt');
+const connection = require('../config/dbConfig');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
-class User {
-    constructor() {
-        this.filePath = path.join(__dirname, '../data/users.json');
-    }
-    //모든 유저 조회
-    findAll() {
+const USER_QUERIES = {
+    FIND_BY_ID: 'SELECT * FROM users WHERE id = ? AND is_deleted = false',
+    FIND_BY_EMAIL: 'SELECT * FROM users WHERE email = ? AND is_deleted = false',
+    INSERT_USER: 'INSERT INTO users (email, password, nickname, profile_image) VALUES (?, ?, ?, ?)',
+    UPDATE_USER: 'UPDATE users SET nickname = ?, profile_image = ? WHERE id = ?',
+    UPDATE_PASSWORD: 'UPDATE users SET password = ? WHERE id = ?',
+    CHECK_NICKNAME: 'SELECT * FROM users WHERE nickname = ? AND id != ? AND is_deleted = false',
+    CHECK_NICKNAME_SIGNUP: 'SELECT * FROM users WHERE nickname = ? AND is_deleted = false',
+    UPDATE_SOFT_DELETE_USER: 'UPDATE users SET is_deleted = true WHERE id = ?',
+    UPDATE_SOFT_DELETE_POSTS: 'UPDATE posts SET is_deleted = true WHERE user_id = ?',
+    UPDATE_SOFT_DELETE_COMMENTS: 'UPDATE comments SET is_deleted = true WHERE user_id = ?'
+}
+// 트랜잭션 실행 함수
+const executeTransaction = async (callback) => {
+    try {
+        const conn = await connection.getConnection();
+        await conn.beginTransaction();
+
         try {
-            const data = fs.readFileSync(this.filePath, 'utf8');
-            return data ? JSON.parse(data) : [];
-        }catch(error) {
-            if(error.code === 'ENOENT') {
-                return [];
-            }
+            const result = await callback(conn);
+            await conn.commit();
+            return result;
+        } catch (error) {
+            await conn.rollback();
             throw error;
         }
+    } catch (error) {
+        console.error(error);
+        throw new InternalServerError();
     }
-    //ID로 유저 조회
-    findById(id) {
-        try {
-            const users = this.findAll();
-            const user = users.find(user => Number(user.id) === Number(id));
-            return user ? user : null;
-        }catch(error) {
-            throw new InternalServerError();
+};
+// ID로 유저 조회
+const findById = async (id) => {
+    return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(USER_QUERIES.FIND_BY_ID, [id]);
+        return rows[0] || null;   
+    });   
+};
+// 이메일로 유저 조회
+const findByEmail = async (email) => {
+    return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(USER_QUERIES.FIND_BY_EMAIL, [email]);
+        return rows.length > 0 ? rows[0] : null;
+    });
+};
+// 회원가입
+const save = async (userData) => {
+    return executeTransaction(async (conn) => {
+        const [result] = await conn.query(
+            USER_QUERIES.INSERT_USER,
+            [userData.email, userData.password, userData.nickname, userData.profile_image]
+        );
+        return {
+            id: result.insertId,
+            ...userData
+        };
+    });
+};
+//회원 정보 수정
+const updateUser = async (id, nickname, profile_image) => {
+    return executeTransaction(async (conn) => {
+        const [result] = await conn.query(
+            USER_QUERIES.UPDATE_USER,
+            [nickname, profile_image, id]
+        );
+
+        if(result.affectedRows == 0) {
+            throw new Error('유저를 찾을 수 없습니다.');
         }
-    }
-    //이메일로 유저 조회
-    findByEmail(email) {
-        try {
-            const users = this.findAll();
-            const user = users.find(user => user.email === email);
-            return user ? user : null;
-        }catch(error) {
-            throw new InternalServerError();
+
+        return {
+            id,
+            nickname,
+            profile_image
+        };
+    });
+};
+// 비밀번호 수정
+const updatePassword = async (id, password) => {
+    return executeTransaction(async (conn) => {
+        const salt = await bcrypt.genSalt(10);
+        const encryptedPassword = await bcrypt.hash(password, salt);
+
+        const [result] = await conn.query(
+            USER_QUERIES.UPDATE_PASSWORD,
+            [encryptedPassword, id]
+        );
+
+        return id;
+    });
+};
+// 닉네임 중복 확인(유저 수정)
+const existsByNicknameUpdate = async (nickname, userId) => {
+    return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(
+            USER_QUERIES.CHECK_NICKNAME,
+            [nickname, userId]  
+        );
+        return rows[0] || undefined;
+    });
+};
+// 닉네임 중복 확인(회원가입)
+const existsByNicknameSignup = async (nickname) => {
+    return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(
+            USER_QUERIES.CHECK_NICKNAME_SIGNUP,
+            [nickname]  
+        );
+        return rows[0] || undefined;
+    });
+};
+
+//회원 탈퇴
+const deleteUser = async (id) => {
+    return executeTransaction(async (conn) => {
+        await conn.query(USER_QUERIES.UPDATE_SOFT_DELETE_COMMENTS, [id]);
+        await conn.query(USER_QUERIES.UPDATE_SOFT_DELETE_POSTS, [id]);
+
+        const [result] = await conn.query(USER_QUERIES.UPDATE_SOFT_DELETE_USER, [id]);
+        
+        if (result.affectedRows === 0) {
+            throw new BadRequest();
         }
-    }
-    //비밀번호 확인
-    findByPassword(id, password) {
-        try {
-            const users = this.findAll();
-            const user = users.find(user => user.id === id);
-            
-            if(!user) {
-                throw new BadRequest();
-            }
 
-            const isPasswordValid = bcrypt.compareSync(user.password, password);
+        return true;
+    });
+};
 
-            if(!isPasswordValid) {
-                throw new BadRequest();
-            }
-
-            return true;
-
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //회원가입
-    save(userData) {
-        try {
-            const users = this.findAll();
-            const userId = users.length > 0 ? Math.max(...users.map(user => user.id)) + 1 : 1;
-            const newUser = {
-                id: userId,
-                ...userData
-            };
-            users.push(newUser);
-            fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
-            
-            return newUser;
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //회원 정보 수정
-    updateUser(id, nickname, profile_image) {
-        try {
-            const users = this.findAll();
-            const userIndex = users.findIndex(user => user.id === Number(id));
-
-            if(userIndex === -1) {
-                throw new Error('유저를 찾을 수 없습니다.');
-            }
-            //유저 정보 수정
-            const updatedUser = {
-                ...users[userIndex],
-                nickname,
-                profile_image
-            };
-            //배열에 반영
-            users[userIndex] = updatedUser;
-
-            fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
-
-            return updatedUser;
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-     //비밀번호 수정
-     updatePassword(id, password) {
-        try {
-            const users = this.findAll();
-            const userIndex = users.findIndex(user => user.id === Number(id));
-
-            if(userIndex === -1) {
-                throw new Error('유저를 찾을 수 없습니다.');
-            }
-            //현재 유저
-            const user = users[userIndex];
-            //새로운 비밀번호 해시
-            const salt = bcrypt.genSaltSync(10);
-            const encryptedPassword = bcrypt.hashSync(password, salt);
-            user.password = encryptedPassword;
-            
-            users[userIndex] = user;
-            fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
-
-            return user;
-        }catch(error) {
-            console.log(error);
-            throw new InternalServerError();
-        }
-    }
-    //이메일 중복 확인
-    existsByEmail(email) {
-        try {
-            const users = this.findAll();
-            const user = users.find(user => user.email === email); 
-            return user !== undefined;
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //닉네임 중복 확인(유저 수정)
-    existsByNicknameUpdate(nickname, userId) {
-        try {
-            const users = this.findAll();
-            const user = users.find(user => 
-                user.nickname === nickname && user.id !== userId
-            ); 
-            return user !== undefined;
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //닉네임 중복 확인(회원가입)
-    existsByNickname(nickname) {
-        try {
-            const users = this.findAll();
-            const user = users.find(user => user.nickname === nickname); 
-            return user !== undefined;
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //비밀번호 변경시 기존 암호가 맞는지 확인
-    checkPasswordMatch(id, password) {
-        try {
-            const users = this.findAll();
-            const user = users.find(user => Number(user.id) === Number(id) && bcrypt.compareSync(password, user.password));
-            return user !== undefined;
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //회원 탈퇴
-    deleteUser(id) {
-        try {
-            const users = this.findAll();
-            const userIndex = users.findIndex(user => user.id === Number(id));
-
-            //해당 유저가 없으면 에러 발생
-            if (userIndex === -1) {
-                throw new BadRequest();
-            }
-
-            //유저 삭제
-            users.splice(userIndex, 1);
-
-            //JSON 파일에 업데이트
-            fs.writeFileSync(this.filePath, JSON.stringify(users, null, 2), 'utf8');
-
-            return true;
-        } catch (error) {
-            throw new InternalServerError();
-        }
-    }
-}
-
-module.exports = new User();
+module.exports = {
+    findById,
+    findByEmail,
+    save,
+    updateUser,
+    updatePassword,
+    existsByNicknameUpdate,
+    existsByNicknameSignup,
+    deleteUser
+};

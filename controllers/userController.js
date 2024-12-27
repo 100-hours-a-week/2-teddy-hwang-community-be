@@ -1,5 +1,5 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
-const UserModel = require('../model/User');
+const { save, findByEmail, existsByNicknameSignup, findById, updateUser, updatePassword, existsByNicknameUpdate, deleteUser } = require('../model/User');
 const bcrypt = require('bcrypt');
 const { userUpload } = require('../config/s3Config');
 
@@ -16,18 +16,18 @@ const createUser = async (req, res, next) => {
         }
 
         //이메일 중복검사
-        const existingEmail = await UserModel.existsByEmail(email);
+        const existingEmail = await findByEmail(email);
         if(existingEmail) {
             return next(new BadRequest());
         }
         //닉네임 중복검사
-        const existingNickname = await UserModel.existsByNickname(nickname);
+        const existingNickname = await existsByNicknameSignup(nickname);
         if(existingNickname) {
             return next(new BadRequest());
         }
         const encryptPassword = await bcrypt.hash(password, 10);
         //회원가입
-        const newUser = await UserModel.save({
+        const newUser = await save({
             email,
             password: encryptPassword,
             nickname,
@@ -54,7 +54,7 @@ const login = async (req, res, next) => {
             return next(new BadRequest());
         }
 
-        const user = await UserModel.findByEmail(email);
+        const user = await findByEmail(email);
 
         if(!user){
             return res.status(401).json({
@@ -98,9 +98,9 @@ const login = async (req, res, next) => {
 //회원 정보 조회
 const getUserDetails = async (req, res, next) => {
     try {
-        const id = req.session.user.id;
+        const id = Number(req.session.user.id);
 
-        const user = await UserModel.findById(id);
+        const user = await findById(id);
 
         res.status(200).json({
             message: '회원 정보 조회를 성공했습니다.',
@@ -119,7 +119,7 @@ const getUserDetails = async (req, res, next) => {
 const updateUserInfo = async (req, res, next) => {
     try {
         const basicProfileImage = "https://kbt-community-s3.s3.ap-northeast-2.amazonaws.com/profile-image.jpg";
-        const id = req.session.user.id;
+        const id = Number(req.session.user.id);
         const { nickname } = req.body;
         const imageUrl = req.file ? req.file.location : basicProfileImage;
 
@@ -127,7 +127,7 @@ const updateUserInfo = async (req, res, next) => {
             return next(new BadRequest());
         }
         
-        const user = await UserModel.updateUser(id, nickname, imageUrl);
+        const user = await updateUser(id, nickname, imageUrl);
     
         res.status(200).json({
             message: '회원 정보 수정을 성공했습니다.',
@@ -142,17 +142,17 @@ const updateUserInfo = async (req, res, next) => {
     }
 }
 //비밀번호 수정
-const updatePassword = async (req, res, next) => {
+const updateUserPassword = async (req, res, next) => {
     try {
         //경로 파라미터 추출
-        const id = req.session.user.id;
+        const id = Number(req.session.user.id);
         const password = req.body.password;
 
         if(!password) {
             return next(new BadRequest());
         }
 
-        const user = await UserModel.updatePassword(id, password);
+        const user = await updatePassword(id, password);
     
         res.status(200).json({
             message: '비밀번호 수정을 성공했습니다.',
@@ -169,7 +169,7 @@ const existsByEmail = async (req, res, next) => {
     try {
         const email = req.params.email;
 
-        const user = await UserModel.existsByEmail(email);
+        const user = await findByEmail(email);
 
         if(!user) {
             res.status(200).json({
@@ -187,12 +187,12 @@ const existsByEmail = async (req, res, next) => {
     }   
 }
 //닉네임 중복 확인(유저 수정)
-const existsByNicknameUpdate = async (req, res, next) => {  
+const checkNicknameUpdate = async (req, res, next) => {  
     try {
-        const id = req.session.user.id;
+        const id = Number(req.session.user.id);
         const nickname = req.params.nickname;
 
-        const user = await UserModel.existsByNicknameUpdate(nickname, id);
+        const user = await existsByNicknameUpdate(nickname, id);
 
         if(!user) {
             res.status(200).json({
@@ -210,11 +210,11 @@ const existsByNicknameUpdate = async (req, res, next) => {
     }   
 }
 //닉네임 중복 확인(회원가입)
-const existsByNickname = async (req, res, next) => {  
+const checkNicknameSignup = async (req, res, next) => {  
     try {
         const nickname = req.params.nickname;
 
-        const user = await UserModel.existsByNickname(nickname);
+        const user = await existsByNicknameSignup(nickname);
 
         if(!user) {
             res.status(200).json({
@@ -231,36 +231,12 @@ const existsByNickname = async (req, res, next) => {
         return next(new InternalServerError());
     }   
 }
-//비밀번호 변경시 기존 암호가 맞는지 확인
-const checkPasswordMatch = async (req, res, next) => {
-    try {
-        const id = req.session.user.id;
-        const password = req.params.password;
-
-        const user = await UserModel.checkPasswordMatch(id, password);
-
-        if(user) {
-            res.status(200).json({
-                message: '기존 비밀번호와 일치합니다.',
-                data: true
-            });
-        }else {
-            res.status(200).json({
-                message: '기존 비밀번호와 일치하지 않습니다.',
-                data: false
-            });
-        }
-
-    }catch(error) {
-        return next(new InternalServerError());
-    }
-}
 //회원 탈퇴
-const deleteUser = async (req, res, next) => {
+const removeUser = async (req, res, next) => {
     try {
-        const id = req.params.user_id;
+        const id = Number(req.params.user_id);
     
-        const user = await UserModel.deleteUser(id);
+        const user = await deleteUser(id);
 
         if(user) {
             res.status(200).json({
@@ -283,10 +259,9 @@ module.exports = {
      login, 
      getUserDetails, 
      updateUserInfo: [userUpload.single('image'), updateUserInfo], 
-     updatePassword,
+     updateUserPassword,
      existsByEmail,
-     existsByNickname,
-     existsByNicknameUpdate,
-     checkPasswordMatch,
-     deleteUser
+     checkNicknameSignup,
+     checkNicknameUpdate,
+     removeUser
 };
