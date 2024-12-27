@@ -196,4 +196,7 @@ dist
 .history
 .ionide
 
+#Custom
+sessions/
+data/
 # End of https://www.toptal.com/developers/gitignore/api/dotenv,visualstudiocode,node,macos
