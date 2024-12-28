@@ -1,5 +1,5 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
-const PostModel = require('../model/Post');
+const { findAll, save, update, findByIdWithoutView, findByIdWithView, deleteById } = require('../model/Post');
 const { postUpload } = require('../config/s3Config');
 
 //글생성
@@ -18,7 +18,7 @@ const createPost = async (req, res, next) => {
             next(new BadRequest());
         }
 
-        const newPost = await PostModel.createPost({
+        const newPost = await save({
             title,
             content,
             image: imageUrl,
@@ -54,7 +54,7 @@ const timestamp = () => {
 //글 수정
 const updatePost = async (req, res, next) => {
     try {
-        const id = req.params.post_id;
+        const id = Number(req.params.post_id);
         const { 
             title, 
             content, 
@@ -75,7 +75,7 @@ const updatePost = async (req, res, next) => {
             user_id: userId
         };
 
-        const post = await PostModel.updatePost(id, postData);
+        const post = await update(id, postData);
         
         res.status(200).json({
             message: '게시글 수정을 성공했습니다.',
@@ -90,13 +90,11 @@ const updatePost = async (req, res, next) => {
 //전체 글 조회
 const getAllPosts = async (req, res, next) => {
     try {
-        const posts = await PostModel.findAllWithUser();
+        const posts = await findAll();
 
         if(!posts) {
             next(new BadRequest());
         }
-        //전체 글 역순 정렬
-        posts.sort((a, b) => b.id - a.id);
         
         res.status(200).json({
             message: '게시글 목록 조회를 성공했습니다.',
@@ -109,8 +107,8 @@ const getAllPosts = async (req, res, next) => {
 //글 상세 조회
 const getOnePost = async (req, res, next) => {
     try {
-        const id = req.params.post_id;
-        const post = await PostModel.findByIdWithView(id);
+        const id = Number(req.params.post_id);
+        const post = await findByIdWithView(id);
 
         if(!post) {
             next(new BadRequest());
@@ -127,8 +125,8 @@ const getOnePost = async (req, res, next) => {
 //글 상세 조회 조회수 증가x
 const getOnePostWithoutView = async (req, res, next) => {
     try {
-        const id = req.params.post_id;
-        const post = await PostModel.findByIdWithoutView(id);
+        const id = Number(req.params.post_id);
+        const post = await findByIdWithoutView(id);
 
         if(!post) {
             next(new BadRequest());
@@ -145,9 +143,9 @@ const getOnePostWithoutView = async (req, res, next) => {
 //글 삭제
 const deletePost = async (req, res, next) => {
     try {
-        const id = req.params.post_id;
+        const id = Number(req.params.post_id);
     
-        const post = await PostModel.deletePost(id);
+        const post = await deleteById(id);
 
         if(post) {
             res.status(200).json({

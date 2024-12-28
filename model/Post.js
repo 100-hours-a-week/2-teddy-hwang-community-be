@@ -1,164 +1,220 @@
-const fs = require('fs');
-const path = require('path');
-const User = require('./User');
-const Comment = require('./Comment');
+const { pool } = require('../config/dbConfig');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
-class Post {
-    constructor() {
-        this.filePath = path.join(__dirname, '../data/posts.json');
-    }
-    //글 전체 조회
-    findAll() {
+const POST_QUERIES = {
+    FIND_ALL: 'SELECT p.post_id, p.title, p.like_count, p.comment_count, p.view_count, p.modified_at, u.nickname, u.profile_image ' + 
+    'FROM posts p ' +
+    'JOIN users u ON p.user_id = u.user_id ' + 
+    'WHERE p.is_deleted = false ' +
+    'ORDER BY p.post_id DESC',
+    INSERT_POST: 'INSERT INTO posts (title, content, image, created_at, modified_at, like_count, view_count, comment_count, user_id) ' +
+    'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    UPDATE_POST: 'UPDATE posts SET title = ?, content = ?, image = ?, modified_at = ? ' +
+    'WHERE post_id = ? AND user_id = ?',
+    FIND_BY_ID: 'SELECT p.post_id, p.title, p.user_id, p.modified_at as post_modified_at, p.image as post_image, p.content as post_content, ' +
+    'p.like_count, p.comment_count, p.view_count, u.nickname as author_nickname, u.profile_image as author_profile_image, ' +
+    'c.comment_id, c.content as comment_content, c.modified_at as comment_modified_at, ' +
+    'cu.user_id as comment_user_id, cu.nickname as comment_author_nickname, cu.profile_image as comment_author_profile_image ' +
+    'FROM posts p ' + 
+    'JOIN users u ON p.user_id = u.user_id ' +
+    'LEFT JOIN comments c ON p.post_id = c.post_id ' +
+    'LEFT JOIN users cu ON c.user_id = cu.user_id ' +
+    'WHERE p.post_id = ? AND p.is_deleted = false AND u.is_deleted = false',
+    UPDATE_VIEW_COUNT: 'UPDATE posts SET view_count = view_count + 1 ' + 
+    'WHERE post_id = ? AND is_deleted = false',
+    DELETE_POST: 'UPDATE posts SET is_deleted = true WHERE post_id = ?',
+};
+// 트랜잭션 실행 함수
+const executeTransaction = async (callback) => {
+    try {
+        const conn = await pool.getConnection();
+        await conn.beginTransaction();
+
         try {
-            const data = fs.readFileSync(this.filePath, 'utf8');
-            const posts =  data ? JSON.parse(data) : [];
-            return posts;
-        }catch(error) {
-            if(error.code === 'ENOENT') {
-                return [];
-            }
+            const result = await callback(conn);
+            await conn.commit();
+            return result;
+        } catch (error) {
+            await conn.rollback();
             throw error;
         }
+    } catch (error) {
+        console.error(error);
+        throw new InternalServerError();
     }
-    //사용자 정보를 추가한 데이터를 반환하는 메서드
-    findAllWithUser() {
-        const posts = this.findAll();
+};
 
-        return posts.map(post => {
-            const user = User.findById(post.user_id);
-            return {
-                ...post,
+
+// 글 전체 조회
+const findAll = async () => {
+   return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(POST_QUERIES.FIND_ALL);
+        
+        const result = rows.map((post) => ({
+            post_id: post.post_id,
+            title: post.title,
+            like_count: post.like_count,
+            comment_count: post.comment_count,
+            view_count: post.view_count,
+            modified_at: post.modified_at,
+            author: {
+                nickname: post.nickname,
+                profile_image: post.profile_image,
+            },
+        }));
+        return result || [];
+   });  
+}
+// 글 생성
+const save = async (postData) => {
+    return executeTransaction(async (conn) => {
+        const [result] = await conn.query(
+            POST_QUERIES.INSERT_POST,
+            [postData.title, postData.content, postData.image, postData.created_at, postData.modified_at, postData.like_count, postData.view_count, postData.comment_count, postData.user_id]
+        );
+        return {
+            id: result.insertId,
+            ...postData
+        };
+    });
+}
+// 글 수정
+const update = async (id, postData) => {
+    return executeTransaction(async (conn) => {
+        const [result] = await conn.query(
+            POST_QUERIES.UPDATE_POST,
+            [postData.title, postData.content, postData.image, postData.modified_at, id, postData.user_id]
+        );
+        if(result.affectedRows == 0) {
+            throw new Error('글을 찾을 수 없습니다.');
+        }
+        return {
+            id,
+            ...postData
+        };
+    });
+}
+// 글 상세 조회 조회수 증가 x
+const findByIdWithoutView = async (id) => {
+    return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(POST_QUERIES.FIND_BY_ID, [id]);
+
+        if(!rows || rows.length == 0) {
+            throw new BadRequest('게시글을 찾을 수 없습니다.');
+        }
+
+        const post = rows[0];
+
+        // 게시글 기본 정보 추출
+        const postDetails = {
+            post_id: post.post_id,
+            title: post.title,
+            user_id: post.user_id,
+            post_author: {
+                nickname: post.author_nickname,
+                profile_image: post.author_profile_image
+            },
+            post_modified_at: post.post_modified_at,
+            post_image: post.post_image,
+            content: post.post_content,
+            like_count: post.like_count,
+            view_count: post.view_count,
+            comment_count: post.comment_count,
+            comments: []
+        };
+        // 댓글이 있는 경우에만 처리
+        const commentMap = new Map();
+                
+        rows.forEach(row => {
+        if (row.comment_id) {  // 댓글이 있는 경우에만
+            commentMap.set(row.comment_id, {
+                comment_id: row.comment_id,
+                content: row.comment_content,
+                modified_at: row.comment_modified_at,
                 author: {
-                    nickname: user.nickname,
-                    profile_image: user.profile_image,
+                    nickname: row.comment_author_nickname,
+                    profile_image: row.comment_author_profile_image
                 }
-            };
+            });
+        }
         });
-    }
-    //글 생성
-    createPost(postData) {
-        try {
-            const posts = this.findAll();
-            const postId = posts.length > 0 ? Math.max(...posts.map(post => post.id)) + 1 : 1;
-            const newPost = {
-                id: postId,
-                ...postData
-            };
-            posts.push(newPost);
-            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
-            
-            return newPost;
-        }catch(error) {
-            throw new InternalServerError();
+
+        postDetails.comments = Array.from(commentMap.values());
+
+        return postDetails;
+    });
+}
+// 글 상세 조회 조회수 증가
+const findByIdWithView = async (id) => {
+    return executeTransaction(async (conn) => {
+        // 조회수 증가 쿼리
+        await conn.query(POST_QUERIES.UPDATE_VIEW_COUNT, [id]);
+
+        const [rows] = await conn.query(POST_QUERIES.FIND_BY_ID, [id]);
+
+        if(!rows || rows.length == 0) {
+            throw new BadRequest('게시글을 찾을 수 없습니다.');
         }
-    }
-    //글 수정
-    updatePost(id, postData) {
-        try {
-            const posts = this.findAll();
-            const postIndex = posts.findIndex(post => post.id === Number(id));
 
-            if(postIndex === -1) {
-                throw new Error('글을 찾을 수 없습니다.');
-            }
-            //유저 정보 수정
-            const updatedPost = {
-                ...posts[postIndex],
-                ...postData
-            };
-            //배열에 반영
-            posts[postIndex] = updatedPost;
+        const post = rows[0];
 
-            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
-
-            return updatedPost;
-        }catch(error) {
-            throw new InternalServerError();
+        // 게시글 기본 정보 추출
+        const postDetails = {
+            post_id: post.post_id,
+            title: post.title,
+            user_id: post.user_id,
+            post_author: {
+                nickname: post.author_nickname,
+                profile_image: post.author_profile_image
+            },
+            post_modified_at: post.post_modified_at,
+            post_image: post.post_image,
+            content: post.post_content,
+            like_count: post.like_count,
+            view_count: post.view_count,
+            comment_count: post.comment_count,
+            comments: []
+        };
+        // 댓글이 있는 경우에만 처리
+        const commentMap = new Map();
+                
+        rows.forEach(row => {
+        if (row.comment_id) {  // 댓글이 있는 경우에만
+            commentMap.set(row.comment_id, {
+                comment_id: row.comment_id,
+                content: row.comment_content,
+                modified_at: row.comment_modified_at,
+                author: {
+                    nickname: row.comment_author_nickname,
+                    profile_image: row.comment_author_profile_image
+                }
+            });
         }
-    }
-    //글 상세 조회 조회수 증가 x
-    findByIdWithoutView(id) {
-        try {
-            const posts = this.findAll();
-            const post = posts.find(post => post.id === Number(id));
+        });
 
-            //변경된 정보 저장
-            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
-            
-            const user = User.findById(post.user_id);
-            const comments = Comment.findByPostId(post.id);
+        postDetails.comments = Array.from(commentMap.values());
 
-            const postDetails = {
-                post_id: post.id,
-                title: post.title,
-                post_author: {
-                    nickname : user.nickname,
-                    profile_image : user.profile_image
-                },
-                user_id: post.user_id,
-                post_modified_at: post.modified_at,
-                post_image: post.image,
-                content: post.content,
-                like_count: post.like_count,
-                view_count: post.view_count,
-                comment_count: post.comment_count,
-                comments: comments
-            }
-            return postDetails ? postDetails : null;           
-        }catch(error) {
-            console.error(error);
-            throw new InternalServerError();
+        return postDetails;
+    });
+}
+//글 삭제
+const deleteById = async (id) => {
+    return executeTransaction(async (conn) => {
+        const [result] = await conn.query(POST_QUERIES.DELETE_POST, [id]);
+        
+        if (result.affectedRows === 0) {
+            throw new BadRequest();
         }
-    }
-    //글 상세 조회 조회수 증가
-    findByIdWithView(id) {
-        try {
-            const posts = this.findAll();
-            const post = posts.find(post => post.id === Number(id));
-            //조회수 증가
-            post.view_count++;
-            //변경된 정보 저장
-            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
-            
-            return this.findByIdWithoutView(id);
-        } catch(error) {
-            console.error(error);
-            throw new InternalServerError();
-        }
-    }
-    //글 삭제
-    deletePost(id) {
-        try {
-            const posts = this.findAll();
-            const postIndex = posts.findIndex(post => post.id === Number(id));
-
-            //해당 글이 없으면 에러 발생
-            if (postIndex === -1) {
-                throw new BadRequest();
-            }
-
-            //글 삭제
-            posts.splice(postIndex, 1);
-
-            //JSON 파일에 업데이트
-            fs.writeFileSync(this.filePath, JSON.stringify(posts, null, 2), 'utf8');
-
-            return true;
-        } catch (error) {
-            throw new InternalServerError();
-        }
-    }
-    //특정 게시글의 좋아요 수 가져오기
-    getLikeCount(postId) {
-        try {          
-            const posts = this.findAll();
-            const post = posts.find(post => post.id === Number(postId));
-            return post ? post.like_count : 0;
-        } catch (error) {
-            throw new InternalServerError();
-        }      
-    }
+        
+        return true;
+    });
 }
 
-module.exports = new Post();
+module.exports = {
+    findAll,
+    save,
+    update,
+    findByIdWithoutView,
+    findByIdWithView,
+    deleteById
+};
