@@ -69,8 +69,6 @@ const login = async (req, res, next) => {
                 message: '*비밀번호가 일치하지 않습니다.'
             });
         }
-
-        console.log(user.user_id);
         
         //유저 정보 세션 저장
         req.session.user = {
