@@ -1,23 +1,23 @@
 const bcrypt = require('bcrypt');
-const connection = require('../config/dbConfig');
+const { pool } = require('../config/dbConfig');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
 const USER_QUERIES = {
-    FIND_BY_ID: 'SELECT * FROM users WHERE id = ? AND is_deleted = false',
+    FIND_BY_ID: 'SELECT * FROM users WHERE user_id = ? AND is_deleted = false',
     FIND_BY_EMAIL: 'SELECT * FROM users WHERE email = ? AND is_deleted = false',
     INSERT_USER: 'INSERT INTO users (email, password, nickname, profile_image) VALUES (?, ?, ?, ?)',
-    UPDATE_USER: 'UPDATE users SET nickname = ?, profile_image = ? WHERE id = ?',
-    UPDATE_PASSWORD: 'UPDATE users SET password = ? WHERE id = ?',
-    CHECK_NICKNAME: 'SELECT * FROM users WHERE nickname = ? AND id != ? AND is_deleted = false',
+    UPDATE_USER: 'UPDATE users SET nickname = ?, profile_image = ? WHERE user_id = ?',
+    UPDATE_PASSWORD: 'UPDATE users SET password = ? WHERE user_id = ?',
+    CHECK_NICKNAME: 'SELECT * FROM users WHERE nickname = ? AND user_id != ? AND is_deleted = false',
     CHECK_NICKNAME_SIGNUP: 'SELECT * FROM users WHERE nickname = ? AND is_deleted = false',
-    UPDATE_SOFT_DELETE_USER: 'UPDATE users SET is_deleted = true WHERE id = ?',
+    UPDATE_SOFT_DELETE_USER: 'UPDATE users SET is_deleted = true WHERE user_id = ?',
     UPDATE_SOFT_DELETE_POSTS: 'UPDATE posts SET is_deleted = true WHERE user_id = ?',
     UPDATE_SOFT_DELETE_COMMENTS: 'UPDATE comments SET is_deleted = true WHERE user_id = ?'
-}
+};
 // 트랜잭션 실행 함수
 const executeTransaction = async (callback) => {
     try {
-        const conn = await connection.getConnection();
+        const conn = await pool.getConnection();
         await conn.beginTransaction();
 
         try {
