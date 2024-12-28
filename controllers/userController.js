@@ -69,26 +69,22 @@ const login = async (req, res, next) => {
                 message: '*비밀번호가 일치하지 않습니다.'
             });
         }
+
+        console.log(user.user_id);
         
         //유저 정보 세션 저장
         req.session.user = {
-            id: user.id,
+            id: user.user_id,
             email: user.email,
             nickname: user.nickname,      
             lastLogin: new Date()    
         };
     
-        //세션 저장이 완료된 후 응답
-        req.session.save((err) => {
-            if (err) {
-                return next(new InternalServerError());
-            }       
-            res.status(200).json({
-                message: '로그인을 성공했습니다.',
-                data: {
-                    user_id: user.id
-                }
-            });
+        res.status(200).json({
+            message: '로그인을 성공했습니다.',
+            data: {
+                user_id: user.user_id
+            }
         });
 
     }catch(error) {
