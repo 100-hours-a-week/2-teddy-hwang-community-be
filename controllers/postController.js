@@ -62,7 +62,7 @@ const updatePost = async (req, res, next) => {
 
         const userId = Number(user_id);
 
-        const imageUrl = req.file ? req.file.location : "";
+        const imageUrl = req.file ? req.file.location : req.body.image;
 
         if(!title || !content || !user_id) {
             next(new BadRequest());
