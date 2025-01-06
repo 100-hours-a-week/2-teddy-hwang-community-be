@@ -1,5 +1,5 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
-const CommentModel = require('../model/Comment');
+const { save, update, findByUserId, deleteById } = require('../model/Comment');
 
 const createComment = async (req, res, next) => {
     try {
@@ -16,7 +16,7 @@ const createComment = async (req, res, next) => {
             user_id,
             post_id
         }
-        const newComment = await CommentModel.createComment(commentData);
+        const newComment = await save(commentData);
 
         const { id } = newComment;
 
@@ -41,11 +41,11 @@ const timestamp = () => {
 //댓글 수정
 const updateComment = async (req, res, next) => {
     try {
-        const id = req.params.comment_id;
         const { 
             content, 
             post_id, 
-            user_id } = req.body;
+            user_id,
+            comment_id } = req.body;
         
         if(!content) {
             next(new BadRequest());
@@ -54,15 +54,16 @@ const updateComment = async (req, res, next) => {
             content,
             modified_at: timestamp(),
             user_id,
-            post_id
+            post_id,
+            comment_id
         };
 
-        const comment = await CommentModel.updateComment(id, commentData);
+        const comment = await update(commentData);
         
         res.status(200).json({
             message: '댓글 수정을 성공했습니다.',
             data: {
-                comment_id: comment.id
+                comment_id: comment.comment_id
             }
         });
     }catch(error) {
@@ -70,11 +71,11 @@ const updateComment = async (req, res, next) => {
     }
 }
 //해당 댓글 조회
-const findByUserId = async (req, res, next) => {
+const findCommentUser = async (req, res, next) => {
     try {
-        const userId = req.session.user.id;
+        const userId = Number(req.session.user.id);
 
-        const comments = await CommentModel.findByUserId(userId);
+        const comments = await findByUserId(userId);
 
         if(!comments) {
             next(new BadRequest());
@@ -92,9 +93,9 @@ const findByUserId = async (req, res, next) => {
 //댓글 삭제
 const deleteComment = async (req, res, next) => {
     try {
-        const id = req.params.comment_id;
+        const id = Number(req.params.comment_id);
 
-        const comment = await CommentModel.deleteComment(id);
+        const comment = await deleteById(id);
 
         if(!comment) {
             next(new BadRequest());
@@ -114,6 +115,6 @@ const deleteComment = async (req, res, next) => {
 module.exports = {
     createComment,
     updateComment,
-    findByUserId,
+    findCommentUser,
     deleteComment
 }
