@@ -115,7 +115,7 @@ const updateUserInfo = async (req, res, next) => {
         const basicProfileImage = "https://kbt-community-s3.s3.ap-northeast-2.amazonaws.com/profile-image.jpg";
         const id = Number(req.session.user.id);
         const { nickname } = req.body;
-        const imageUrl = req.file ? req.file.location : basicProfileImage;
+        const imageUrl = req.file ? req.file.location : req.body.image;
 
         if(!nickname) {
             return next(new BadRequest());
@@ -246,7 +246,24 @@ const removeUser = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
-
+// 로그아웃
+const logout = (req, res, next) => {
+    try {
+        // 세션 삭제
+        req.session.destroy((err) => {
+            if (err) {
+                return next(new InternalServerError());
+            }
+            // 세션 쿠키 삭제
+            res.clearCookie('connect.sid');
+            res.status(200).json({
+                message: '로그아웃을 성공했습니다.'
+            });
+        });
+    } catch (error) {
+        return next(new InternalServerError());
+    }
+ };
 
 module.exports = {
      createUser: [userUpload.single('image'), createUser], 
@@ -257,5 +274,6 @@ module.exports = {
      existsByEmail,
      checkNicknameSignup,
      checkNicknameUpdate,
-     removeUser
+     removeUser,
+     logout
 };
