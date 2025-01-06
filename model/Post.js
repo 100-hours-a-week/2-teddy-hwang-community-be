@@ -17,12 +17,13 @@ const POST_QUERIES = {
     'cu.user_id as comment_user_id, cu.nickname as comment_author_nickname, cu.profile_image as comment_author_profile_image ' +
     'FROM posts p ' + 
     'JOIN users u ON p.user_id = u.user_id ' +
-    'LEFT JOIN comments c ON p.post_id = c.post_id ' +
+    'LEFT JOIN comments c ON p.post_id = c.post_id AND c.is_deleted = false ' +
     'LEFT JOIN users cu ON c.user_id = cu.user_id ' +
     'WHERE p.post_id = ? AND p.is_deleted = false AND u.is_deleted = false',
     UPDATE_VIEW_COUNT: 'UPDATE posts SET view_count = view_count + 1 ' + 
     'WHERE post_id = ? AND is_deleted = false',
     DELETE_POST: 'UPDATE posts SET is_deleted = true WHERE post_id = ?',
+    FIND_LIKE_COUNT: 'SELECT like_count FROM posts WHERE post_id = ?'
 };
 // 트랜잭션 실행 함수
 const executeTransaction = async (callback) => {
@@ -132,6 +133,7 @@ const findByIdWithoutView = async (id) => {
                 content: row.comment_content,
                 modified_at: row.comment_modified_at,
                 author: {
+                    user_id: row.comment_user_id,
                     nickname: row.comment_author_nickname,
                     profile_image: row.comment_author_profile_image
                 }
@@ -177,7 +179,7 @@ const findByIdWithView = async (id) => {
         };
         // 댓글이 있는 경우에만 처리
         const commentMap = new Map();
-                
+
         rows.forEach(row => {
         if (row.comment_id) {  // 댓글이 있는 경우에만
             commentMap.set(row.comment_id, {
@@ -185,6 +187,7 @@ const findByIdWithView = async (id) => {
                 content: row.comment_content,
                 modified_at: row.comment_modified_at,
                 author: {
+                    user_id: row.comment_user_id,
                     nickname: row.comment_author_nickname,
                     profile_image: row.comment_author_profile_image
                 }
@@ -209,6 +212,13 @@ const deleteById = async (id) => {
         return true;
     });
 }
+//현재 글 좋아요 수 확인
+const findLikeCount = async (id) => {
+    return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(POST_QUERIES.FIND_LIKE_COUNT, [id]);
+        return rows[0].like_count !== 0 ? rows[0].like_count : 0;
+   });  
+}
 
 module.exports = {
     findAll,
@@ -216,5 +226,6 @@ module.exports = {
     update,
     findByIdWithoutView,
     findByIdWithView,
-    deleteById
+    deleteById,
+    findLikeCount
 };
