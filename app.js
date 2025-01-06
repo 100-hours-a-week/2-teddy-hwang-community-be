@@ -44,7 +44,8 @@ app.use(session({
     cookie: {
         httpOnly: process.env.SESSION_COOKIE_HTTP_ONLY === 'true',
         secure: process.env.SESSION_COOKIE_SECURE === 'true',
-        maxAge: parseInt(process.env.SESSION_COOKIE_MAX_AGE)
+        maxAge: parseInt(process.env.SESSION_COOKIE_MAX_AGE),
+        sameSite: 'lax'
     }
 }));
 
@@ -65,5 +66,3 @@ app.use((err, req, res, next) => {
 });
 
 startServer();
-
-
