@@ -1,19 +1,19 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
-const LikeModel = require('../model/Like');
-const PostModel = require('../model/Post');
+const { insertLike, deleteLike, findPostLike } = require('../model/Like');
+const { findLikeCount } = require('../model/Post');
 
 //좋아요 추가
 const addLike = async (req, res, next) => {
     try {
-        const postId = req.params.post_id;
-        const userId = req.session.user.id;
+        const postId = Number(req.params.post_id);
+        const userId = Number(req.session.user.id);
 
         if(!userId || !postId) {
             next(new BadRequest());
         }
 
-        const like = await LikeModel.addLike(postId, userId);
-        const likeCount = await PostModel.getLikeCount(postId);
+        const like = await insertLike(postId, userId);
+        const likeCount = await findLikeCount(postId);
 
         res.status(201).json({
             message: '좋아요 추가를 성공했습니다.',
@@ -30,15 +30,15 @@ const addLike = async (req, res, next) => {
 //좋아요 취소
 const removeLike = async (req, res, next) => {
     try {
-        const postId = req.params.post_id;
-        const userId = req.session.user.id;
+        const postId = Number(req.params.post_id);
+        const userId = Number(req.session.user.id);
 
         if(!userId || !postId) {
             next(new BadRequest());
         }
 
-        const like = await LikeModel.removeLike(postId, userId);
-        const likeCount = await PostModel.getLikeCount(postId);
+        const like = await deleteLike(postId, userId);
+        const likeCount = await findLikeCount(postId);
 
         res.status(200).json({
             message: '좋아요 취소를 성공했습니다.',
@@ -55,15 +55,15 @@ const removeLike = async (req, res, next) => {
 //좋아요 상태 확인
 const isLikedByUser = async (req, res, next) => {
     try {
-        const postId = req.params.post_id;
-        const userId = req.session.user.id;
+        const postId = Number(req.params.post_id);
+        const userId = Number(req.session.user.id);
 
         if(!userId || !postId) {
             next(new BadRequest());
         }
 
-        const like = await LikeModel.isLikedByUser(postId, userId);
-
+        const like = await findPostLike(postId, userId);
+        
         res.status(200).json({
             message: '좋아요 상태 확인을 성공했습니다.',
             is_liked: like

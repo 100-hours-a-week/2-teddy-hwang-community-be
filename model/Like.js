@@ -1,115 +1,78 @@
-const fs = require('fs');
-const path = require('path');
-const Post = require('./Post');
+const { pool } = require('../config/dbConfig');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
 
-class Like {
-    constructor() {
-        this.likeFilePath = path.join(__dirname, '../data/likes.json');
-        this.postFilePath = path.join(__dirname, '../data/posts.json');
-    }
-    //JSON 파일에서 좋아요 데이터 읽어오기
-    readLikesFile() {
+const LIKE_QUERIES = {
+    INSERT_LIKE: 'INSERT INTO likes (user_id, post_id) VALUES (?, ?)',
+    ADD_LIKE_COUNT: 'UPDATE posts SET like_count = like_count + 1 WHERE post_id = ?',
+    DELETE_LIKE: 'DELETE FROM likes WHERE user_id = ? AND post_id = ?',
+    REMOVE_LIKE_COUNT: 'UPDATE posts SET like_count = like_count - 1 WHERE post_id = ?',
+    FIND_POST_LIKE: 'SELECT * FROM likes WHERE user_id = ? AND post_id = ?'
+};
+// 트랜잭션 실행 함수
+const executeTransaction = async (callback) => {
+    try {
+        const conn = await pool.getConnection();
+        await conn.beginTransaction();
+
         try {
-            const data = fs.existsSync(this.likeFilePath) ? fs.readFileSync(this.likeFilePath, 'utf8') : '[]';
-            return JSON.parse(data);
+            const result = await callback(conn);
+            await conn.commit();
+            return result;
         } catch (error) {
-            throw new InternalServerError();
+            await conn.rollback();
+            throw error;
         }
+    } catch (error) {
+        console.error(error);
+        throw new InternalServerError();
     }
+};
+//좋아요 추가 및 게시글의 like_count 증가
+const insertLike = async (postId, userId) => {
+    return executeTransaction(async (conn) => {
+        const [result] = await conn.query(
+            LIKE_QUERIES.INSERT_LIKE,
+            [userId, postId]
+        ); 
 
-    //JSON 파일에서 게시글 데이터 읽어오기
-    readPostsFile() {
-        try {
-            const data = fs.existsSync(this.postFilePath) ? fs.readFileSync(this.postFilePath, 'utf8') : '[]';
-            return JSON.parse(data);
-        } catch (error) {
-            throw new InternalServerError();
-        }
-    }
-
-    //JSON 파일에 좋아요 데이터 저장
-    writeLikesFile(likes) {
-        try {
-            fs.writeFileSync(this.likeFilePath, JSON.stringify(likes, null, 2), 'utf8');
-        } catch (error) {
-            throw new InternalServerError();
-        }
-    }
-
-    //JSON 파일에 게시글 데이터 저장
-    writePostsFile(posts) {
-        try {
-            fs.writeFileSync(this.postFilePath, JSON.stringify(posts, null, 2), 'utf8');
-        } catch (error) {
-            throw new InternalServerError();
-        }
-    }
-
-    //좋아요 추가 및 게시글의 like_count 증가
-    addLike(postId, userId) {
-        try { 
-            const likes = this.readLikesFile();
-            const posts = this.readPostsFile();
-
-            //이미 좋아요가 눌려 있는지 확인
-            const existLike = likes.find(like => like.post_id === Number(postId) && like.user_id === Number(userId));
-            if (existLike) {
-                throw new BadRequest('이미 좋아요를 눌렀습니다.');
-            }
-
-            //좋아요 추가
-            const newLike = { post_id: Number(postId), user_id: userId };
-            likes.push(newLike);
-            this.writeLikesFile(likes);
-
-            // posts.json에서 해당 게시글의 like_count 증가
-            const postIndex = posts.findIndex(post => post.id === Number(postId));
-            if (postIndex !== -1) {
-                posts[postIndex].like_count++;
-                this.writePostsFile(posts);
-            }
-
-            return newLike;
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //좋아요 취소 및 게시글의 like_count 감소
-    removeLike(postId, userId) {
-        try {
-            const likes = this.readLikesFile();
-            const posts = this.readPostsFile();
-    
-            //좋아요가 존재하지 않는 경우 에러 처리
-            const updatedLikes = likes.filter(like => !(like.post_id === Number(postId) && like.user_id === Number(userId)));
-            if (updatedLikes.length === likes.length) {
-                throw new BadRequest('좋아요를 누르지 않았습니다.');
-            }
-    
-            //좋아요 취소
-            this.writeLikesFile(updatedLikes);
-    
-            //posts.json에서 해당 게시글의 like_count 감소
-            const postIndex = posts.findIndex(post => post.id === Number(postId));
-            if (postIndex !== -1 && posts[postIndex].like_count > 0) {
-                posts[postIndex].like_count -= 1;
-                this.writePostsFile(posts);
-            }
-            return Number(postId);
-        }catch(error) {
-            throw new InternalServerError();
-        }
-    }
-    //특정 게시글에 사용자가 좋아요를 눌렀는지 확인
-    isLikedByUser(postId, userId) {
-        const likes = this.readLikesFile();
+        await conn.query(LIKE_QUERIES.ADD_LIKE_COUNT, [postId]);
         
-        // likes 배열에서 해당 게시글과 사용자에 대한 좋아요가 존재하는지 확인
-        const existLike = likes.find(like => like.post_id === Number(postId) && like.user_id === Number(userId));
+        return {
+            id: result.insertId,
+        };
+    });
+}
+//좋아요 취소 및 게시글의 like_count 감소
+const deleteLike = (postId, userId) => {
+    return executeTransaction(async (conn) => {
+        const [result] = await conn.query(
+            LIKE_QUERIES.DELETE_LIKE,
+            [userId, postId]
+        );
+
+        await conn.query(LIKE_QUERIES.REMOVE_LIKE_COUNT, [postId]);
+
+        if (result.affectedRows === 0) {
+            throw new BadRequest();
+        }       
+        return postId;
+    });
+}
+//특정 게시글에 사용자가 좋아요를 눌렀는지 확인
+const findPostLike = (postId, userId) => {
+    return executeTransaction(async (conn) => {
+        const [rows] = await conn.query(
+            LIKE_QUERIES.FIND_POST_LIKE,
+            [userId, postId]
+        );
         
-        return existLike !== undefined; // 좋아요가 존재하면 true, 없으면 false 반환
-    }
+        return rows.length === 0 ? false : true; // 좋아요가 존재하면 true, 없으면 false 반환
+    });
 }
 
-module.exports = new Like();
+
+module.exports = {
+    insertLike,
+    deleteLike,
+    findPostLike
+};
