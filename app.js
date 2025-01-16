@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const session = require('express-session');
-const { sessionStore } = require('./config/dbConfig');
 require('dotenv').config();
 
+const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
 const userRoutes = require('./routes/userRoutes');
 const commentRoutes = require('./routes/commentRoutes');
@@ -34,28 +33,15 @@ app.use(cors({
     credentials: true
 }));
 
-// 쿠키 및 세션 설정
-app.use(cookieParser());
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: process.env.SESSION_RESAVE === 'true',
-    saveUninitialized: process.env.SESSION_SAVE_UNINITIALIZED === 'true',
-    store: sessionStore,
-    cookie: {
-        httpOnly: process.env.SESSION_COOKIE_HTTP_ONLY === 'true',
-        secure: process.env.SESSION_COOKIE_SECURE === 'true',
-        maxAge: parseInt(process.env.SESSION_COOKIE_MAX_AGE),
-        sameSite: 'lax'
-    }
-}));
-
-// json 설정
+app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // 경로 설정
+app.use('/api/auth', authRoutes); 
 app.use('/api/posts', postRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/comments', commentRoutes);
+app.use('/api/comments', commentRoutes);  
 
 app.use((err, req, res, next) => {
     const statusCode = err.statusCode || 500;
