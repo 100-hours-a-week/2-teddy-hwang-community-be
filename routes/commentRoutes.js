@@ -1,14 +1,18 @@
+// routes/commentRoutes.js
 const express = require('express');
-const { createComment, updateComment, findCommentUser, deleteComment,  } = require('../controllers/commentController')
+const { 
+    createComment, 
+    updateComment, 
+    findCommentUser, 
+    deleteComment 
+} = require('../controllers/commentController');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.post('/', createComment);
-
-router.patch('/:comment_id', updateComment);
-
-router.get('/:comment_id', findCommentUser);
-
-router.delete('/:comment_id', deleteComment);
+router.post('/', authMiddleware, createComment);
+router.patch('/:comment_id', authMiddleware, updateComment);
+router.get('/:comment_id', authMiddleware, findCommentUser);
+router.delete('/:comment_id', authMiddleware, deleteComment);
 
 module.exports = router;
