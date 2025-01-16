@@ -21,6 +21,8 @@ const executeTransaction = async (callback) => {
         } catch (error) {
             await conn.rollback();
             throw error;
+        } finally {
+            await conn.release();
         }
     } catch (error) {
         console.error(error);
