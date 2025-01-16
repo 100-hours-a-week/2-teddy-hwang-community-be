@@ -24,16 +24,9 @@ class UnauthorizedError extends Error {
     }
 }
 
-class ForbiddenError extends Error {
-    constructor(message = '접근 권한이 없습니다.') {
-        super(message, 403);
-    }
-}
-
 module.exports = {
     CustomError, 
     BadRequest, 
     InternalServerError,
     UnauthorizedError,
-    ForbiddenError
 };
