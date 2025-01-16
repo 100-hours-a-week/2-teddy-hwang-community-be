@@ -6,7 +6,7 @@ const { findLikeCount } = require('../model/Post');
 const addLike = async (req, res, next) => {
     try {
         const postId = Number(req.params.post_id);
-        const userId = Number(req.session.user.id);
+        const userId = Number(req.user.id);
 
         if(!userId || !postId) {
             next(new BadRequest());
@@ -31,7 +31,7 @@ const addLike = async (req, res, next) => {
 const removeLike = async (req, res, next) => {
     try {
         const postId = Number(req.params.post_id);
-        const userId = Number(req.session.user.id);
+        const userId = Number(req.user.id);
 
         if(!userId || !postId) {
             next(new BadRequest());
@@ -56,7 +56,7 @@ const removeLike = async (req, res, next) => {
 const isLikedByUser = async (req, res, next) => {
     try {
         const postId = Number(req.params.post_id);
-        const userId = Number(req.session.user.id);
+        const userId = Number(req.user.id);
 
         if(!userId || !postId) {
             next(new BadRequest());
