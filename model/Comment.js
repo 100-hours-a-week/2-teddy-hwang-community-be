@@ -4,8 +4,11 @@ const { InternalServerError, BadRequest } = require('../middleware/customError')
 const COMMENT_QUERIES = {
     INSERT_COMMENT: 'INSERT INTO comments (content, created_at, modified_at, user_id, post_id) ' +
     'VALUES (?, ?, ?, ?, ?)',
-    UPDATE_COMMENT_COUNT: 'UPDATE posts SET comment_count = comment_count + 1 ' +
+    UPDATE_COMMENT_COUNT_INCREASE: 'UPDATE posts SET comment_count = comment_count + 1 ' +
     'WHERE post_id = ?',
+    UPDATE_COMMENT_COUNT_DECREASE: 'UPDATE posts SET comment_count = comment_count - 1 ' +
+    'WHERE post_id = ?',
+    FIND_BY_ID: 'SELECT * FROM comments WHERE comment_id = ?',
     UPDATE_COMMENT: 'UPDATE comments SET content = ?, modified_at = ? WHERE comment_id = ? AND user_id = ? AND post_id = ?',
     FIND_BY_USER_ID: 'SELECT * FROM comments WHERE user_id = ? AND is_deleted = false',
     DELETE_BY_ID: 'UPDATE comments SET is_deleted = true WHERE comment_id = ?'
@@ -24,6 +27,8 @@ const executeTransaction = async (callback) => {
         } catch (error) {
             await conn.rollback();
             throw error;
+        } finally {
+            await conn.release();
         }
     } catch (error) {
         console.error(error);
@@ -38,7 +43,7 @@ const save = async (commentData) => {
             [commentData.content, commentData.created_at, commentData.modified_at, commentData.user_id, commentData.post_id]
         );
 
-        await conn.query(COMMENT_QUERIES.UPDATE_COMMENT_COUNT, [result.insertId]);
+        await conn.query(COMMENT_QUERIES.UPDATE_COMMENT_COUNT_INCREASE, [commentData.post_id]);
         return {
             id: result.insertId,
             ...commentData
@@ -68,11 +73,19 @@ const findByUserId = async (userId) => {
 //댓글 삭제
 const deleteById = async (id) => {
     return executeTransaction(async (conn) => {
-        const [result] = await conn.query(COMMENT_QUERIES.DELETE_BY_ID, [id]);
+        const [comment] = await conn.query(COMMENT_QUERIES.FIND_BY_ID, [id]);
+
+        if(comment.length === 0) {
+            throw new BadRequest('해당하는 댓글이 없습니다.');
+        }
+        const postId = comment[0].post_id;
         
+        const [result] = await conn.query(COMMENT_QUERIES.DELETE_BY_ID, [id]);      
         if (result.affectedRows === 0) {
             throw new BadRequest();
         }
+
+        await conn.query(COMMENT_QUERIES.UPDATE_COMMENT_COUNT_DECREASE, [postId]);
         
         return true;
     });
