@@ -73,7 +73,7 @@ const updateComment = async (req, res, next) => {
 //해당 댓글 조회
 const findCommentUser = async (req, res, next) => {
     try {
-        const userId = Number(req.session.user.id);
+        const userId = Number(req.user.id);
 
         const comments = await findByUserId(userId);
 
