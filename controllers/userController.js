@@ -3,7 +3,6 @@ const { save, findByEmail, existsByNicknameSignup, findById, updateUser, updateP
 const bcrypt = require('bcrypt');
 const { userUpload } = require('../config/s3Config');
 
-
 //사용자 생성
 const createUser = async (req, res, next) => {
     try {
@@ -44,62 +43,17 @@ const createUser = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
-//로그인
-const login = async (req, res, next) => {
-    try {
-        const { email, password } = req.body;
-
-        //사용자 정보가 입력되지 않았을 때
-        if(!email || !password) {
-            return next(new BadRequest());
-        }
-
-        const user = await findByEmail(email);
-
-        if(!user){
-            return res.status(401).json({
-                message: '*이메일이 존재하지 않습니다.'
-            });;
-        }
-        //저장된 비밀번호와 입력된 비밀번호 비교
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-
-        if(!isPasswordValid){
-            return res.status(401).json({
-                message: '*비밀번호가 일치하지 않습니다.'
-            });
-        }
-        
-        //유저 정보 세션 저장
-        req.session.user = {
-            id: user.user_id,
-            email: user.email,
-            nickname: user.nickname,      
-            lastLogin: new Date()    
-        };
-    
-        res.status(200).json({
-            message: '로그인을 성공했습니다.',
-            data: {
-                user_id: user.user_id
-            }
-        });
-
-    }catch(error) {
-        return next(new InternalServerError());
-    }
-}
 //회원 정보 조회
 const getUserDetails = async (req, res, next) => {
     try {
-        const id = Number(req.session.user.id);
-
+        const id = Number(req.user.id);
+        
         const user = await findById(id);
 
         res.status(200).json({
             message: '회원 정보 조회를 성공했습니다.',
             data: {
-                user_id: user.id,
+                user_id: user.user_id,
                 email : user.email,
                 nickname : user.nickname,
                 profile_image : user.profile_image
@@ -112,8 +66,7 @@ const getUserDetails = async (req, res, next) => {
 //회원 정보 수정
 const updateUserInfo = async (req, res, next) => {
     try {
-        const basicProfileImage = "https://kbt-community-s3.s3.ap-northeast-2.amazonaws.com/profile-image.jpg";
-        const id = Number(req.session.user.id);
+        const id = Number(req.user.id);
         const { nickname } = req.body;
         const imageUrl = req.file ? req.file.location : req.body.image;
 
@@ -139,7 +92,7 @@ const updateUserInfo = async (req, res, next) => {
 const updateUserPassword = async (req, res, next) => {
     try {
         //경로 파라미터 추출
-        const id = Number(req.session.user.id);
+        const id = Number(req.user.id);
         const password = req.body.password;
 
         if(!password) {
@@ -183,7 +136,7 @@ const existsByEmail = async (req, res, next) => {
 //닉네임 중복 확인(유저 수정)
 const checkNicknameUpdate = async (req, res, next) => {  
     try {
-        const id = Number(req.session.user.id);
+        const id = Number(req.user.id);
         const nickname = req.params.nickname;
 
         const user = await existsByNicknameUpdate(nickname, id);
@@ -228,7 +181,7 @@ const checkNicknameSignup = async (req, res, next) => {
 //회원 탈퇴
 const removeUser = async (req, res, next) => {
     try {
-        const id = Number(req.params.user_id);
+        const id = Number(req.user_id);
     
         const user = await deleteUser(id);
 
@@ -246,28 +199,9 @@ const removeUser = async (req, res, next) => {
         return next(new InternalServerError());
     }
 }
-// 로그아웃
-const logout = (req, res, next) => {
-    try {
-        // 세션 삭제
-        req.session.destroy((err) => {
-            if (err) {
-                return next(new InternalServerError());
-            }
-            // 세션 쿠키 삭제
-            res.clearCookie('connect.sid');
-            res.status(200).json({
-                message: '로그아웃을 성공했습니다.'
-            });
-        });
-    } catch (error) {
-        return next(new InternalServerError());
-    }
- };
-
+ 
 module.exports = {
      createUser: [userUpload.single('image'), createUser], 
-     login, 
      getUserDetails, 
      updateUserInfo: [userUpload.single('image'), updateUserInfo], 
      updateUserPassword,
@@ -275,5 +209,4 @@ module.exports = {
      checkNicknameSignup,
      checkNicknameUpdate,
      removeUser,
-     logout
 };
