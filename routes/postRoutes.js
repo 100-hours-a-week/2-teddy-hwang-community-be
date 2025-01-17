@@ -18,7 +18,7 @@ router.patch('/:post_id', authMiddleware, ...updatePost);
 
 router.get('/', authMiddleware, getAllPosts);
 router.get('/:post_id', authMiddleware, getOnePost);
-router.get('/:post_id/without-vie w', authMiddleware, getOnePostWithoutView);
+router.get('/:post_id/without-view', authMiddleware, getOnePostWithoutView);
 
 router.delete('/:post_id', authMiddleware, deletePost);
 
