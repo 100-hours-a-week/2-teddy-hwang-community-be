@@ -1,5 +1,6 @@
-const { pool } = require('../config/dbConfig');
+const { pool, getCurrentTimestamp } = require('../config/dbConfig');
 const { InternalServerError, BadRequest } = require('../middleware/customError');
+require('colors');
 
 const POST_QUERIES = {
     FIND_ALL: 'SELECT p.post_id, p.title, p.like_count, p.comment_count, p.view_count, p.modified_at, u.nickname, u.profile_image ' + 
@@ -27,30 +28,57 @@ const POST_QUERIES = {
 };
 // 트랜잭션 실행 함수
 const executeTransaction = async (callback) => {
+    const timestamp = getCurrentTimestamp();
     try {
+        console.log(`[${timestamp}] 트랜잭션 시작!!`.info);
         const conn = await pool.getConnection();
         await conn.beginTransaction();
 
+         // 쿼리와 파라미터를 결합하는 함수
+         const formatQuery = (sql, params = []) => {
+            if (!params.length) return sql;
+            return sql.replace(/\?/g, () => {
+                const param = params.shift();
+                if (param === null) return 'NULL';
+                if (typeof param === 'string') return `'${param}'`;
+                if (typeof param === 'object' && param instanceof Date) return `'${param.toISOString()}'`;
+                return param;
+            });
+        };
+
+        // 쿼리 프록시 생성
+        const queryProxy = {
+            query: async (sql, params = []) => {
+                const formattedQuery = formatQuery(sql, [...params]); // params 배열 복사
+                console.log(`[${getCurrentTimestamp()}] ${formattedQuery.query}`);
+                return conn.query(sql, params);
+            }
+        };
+
         try {
-            const result = await callback(conn);
+            const result = await callback(queryProxy);
             await conn.commit();
+            console.log(`[${timestamp}] 트랜잭션 커밋 완료!!`.success);
             return result;
         } catch (error) {
             await conn.rollback();
+            console.log(`[${timestamp}] 트랜잭션 롤백!!`.error, error.message);
             throw error;
         } finally {
             await conn.release();
         }
     } catch (error) {
-        console.error(error);
+        console.error(`[${timestamp}] 트랜잭션 실패!!`.error, error.message);
         throw new InternalServerError();
     }
 };
 
 
+
 // 글 전체 조회
 const findAll = async () => {
-   return executeTransaction(async (conn) => {
+    const timestamp = getCurrentTimestamp();
+    return executeTransaction(async (conn) => {
         const [rows] = await conn.query(POST_QUERIES.FIND_ALL);
         
         const result = rows.map((post) => ({
