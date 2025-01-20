@@ -16,8 +16,8 @@ const router = express.Router();
 router.post('/', authMiddleware, ...createPost);
 router.patch('/:post_id', authMiddleware, ...updatePost);
 
-router.get('/', authMiddleware, getAllPosts);
-router.get('/:post_id', authMiddleware, getOnePost);
+router.get('/', getAllPosts);
+router.get('/:post_id', getOnePost);
 router.get('/:post_id/without-view', authMiddleware, getOnePostWithoutView);
 
 router.delete('/:post_id', authMiddleware, deletePost);
