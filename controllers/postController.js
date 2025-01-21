@@ -90,7 +90,14 @@ const updatePost = async (req, res, next) => {
 //전체 글 조회
 const getAllPosts = async (req, res, next) => {
     try {
-        const posts = await findAll();
+        // 쿼리 파라미터에서 페이지와 한 페이지당 글 개수 추출
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        if(page < 1 || limit < 1) {
+            next(new BadRequest('잘못된 페이지 파라미터입니다.'));
+        }
+        const posts = await findAll(page, limit);
 
         if(!posts) {
             next(new BadRequest());
