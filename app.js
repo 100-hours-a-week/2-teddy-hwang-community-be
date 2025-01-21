@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
@@ -10,6 +11,8 @@ const userRoutes = require('./routes/userRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 
 const app = express();
+
+app.disable('x-powered-by');
 
 // DB 연결
 const startServer = async () => {
@@ -31,33 +34,40 @@ app.use(cors({
         process.env.CORS_ORIGIN,
         process.env.CORS_EC2
     ],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
 }));
 
+// API 요청 제한
+const limiter = rateLimit({
+	windowMs: 1 * 60 * 1000, // 15분
+	limit: 10, // 최대 요청 100건
+	standardHeaders: 'draft-8', 
+    message: "너무 많은 요청이 들어왔습니다. 잠시 후 다시 시도해주세요.",
+	legacyHeaders: false
+	// store: ... , // Redis, Memcached, etc. See below.
+});
+
+app.use(limiter);
+
 app.use(helmet());
 
-// Content Security Policy 설정
+// helmet 미들웨어 설정
 app.use(helmet.contentSecurityPolicy({
     directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", 'cdnjs.cloudflare.com'],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'https:', process.env.S3_BUCKET_URL],
+        scriptSrc: ["'self'", 'cdnjs.cloudflare.com'],
+        styleSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', process.env.S3_BUCKET_URL],
         connectSrc: ["'self'", process.env.CORS_ORIGIN, process.env.CORS_EC2],
-        frameSrc: ["'none'"],
-        objectSrc: ["'none'"]
-    }
+        objectSrc: ["'none'"],        // object 태그 사용 완전 차단
+        baseUri: ["'self'"],          // base 태그 제한
+        formAction: ["'self'"],       // form 제출 제한
+        frameAncestors: ["'none'"],   // iframe embedding 방지
+        manifestSrc: ["'self'"],      // 웹 매니페스트 파일 제한
+    } 
 }));
-// XSS 방지 설정 강화
-app.use(helmet.xssFilter());
-// DNS Prefetch Control 설정
-app.use(helmet.dnsPrefetchControl({ allow: false }));
-// Frame 옵션 설정 (클릭재킹 방지)
-app.use(helmet.frameguard({ action: 'deny' }));
-// IE에서 콘텐츠 타입 추측 방지
-app.use(helmet.ieNoOpen());
-// X-Powered-By 헤더 제거
-app.use(helmet.hidePoweredBy());
 
 // 쿠키 파서 설정
 app.use(cookieParser(process.env.COOKIE_SECRET));
