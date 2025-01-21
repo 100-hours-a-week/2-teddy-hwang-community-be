@@ -7,7 +7,11 @@ const POST_QUERIES = {
     'FROM posts p ' +
     'JOIN users u ON p.user_id = u.user_id ' + 
     'WHERE p.is_deleted = false ' +
-    'ORDER BY p.post_id DESC',
+    'ORDER BY p.post_id DESC ' +
+    'LIMIT ? OFFSET ?',
+    COUNT_POSTS: 'SELECT COUNT(*) as total FROM posts p ' +
+    'JOIN users u ON p.user_id = u.user_id ' + 
+    'WHERE p.is_deleted = false',
     INSERT_POST: 'INSERT INTO posts (title, content, image, created_at, modified_at, like_count, view_count, comment_count, user_id) ' +
     'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
     UPDATE_POST: 'UPDATE posts SET title = ?, content = ?, image = ?, modified_at = ? ' +
@@ -76,12 +80,19 @@ const executeTransaction = async (callback) => {
 
 
 // 글 전체 조회
-const findAll = async () => {
-    const timestamp = getCurrentTimestamp();
+const findAll = async (page = 1, limit = 10) => {
     return executeTransaction(async (conn) => {
-        const [rows] = await conn.query(POST_QUERIES.FIND_ALL);
+        // 전체 게시글 수 조회
+        const [countResult] = await conn.query(POST_QUERIES.COUNT_POSTS);
+        const totalPosts = countResult[0].total;
+
+        // offset 계산
+        const offset = (page - 1) * limit;
+
+        // 페이징된 게시글 조회
+        const [rows] = await conn.query(POST_QUERIES.FIND_ALL, [limit, offset]);
         
-        const result = rows.map((post) => ({
+        const posts = rows.map((post) => ({
             post_id: post.post_id,
             title: post.title,
             like_count: post.like_count,
@@ -93,7 +104,11 @@ const findAll = async () => {
                 profile_image: post.profile_image,
             },
         }));
-        return result || [];
+        return {
+            posts,
+            hasMore: offset + posts.length < totalPosts,
+            totalPosts
+        }
    });  
 }
 // 글 생성
