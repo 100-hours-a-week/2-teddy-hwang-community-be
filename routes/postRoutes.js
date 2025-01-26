@@ -6,10 +6,10 @@ const {
     getAllPosts, 
     getOnePost, 
     deletePost, 
-    getOnePostWithoutView 
 } = require('../controllers/postController');
 const { authMiddleware } = require('../middleware/auth');
 const likeRoutes = require('./likeRoutes');
+const { checkViewCount } = require('../middleware/viewCount');
 
 const router = express.Router();
 
@@ -17,8 +17,7 @@ router.post('/', authMiddleware, ...createPost);
 router.patch('/:post_id', authMiddleware, ...updatePost);
 
 router.get('/', getAllPosts);
-router.get('/:post_id', getOnePost);
-router.get('/:post_id/without-view', authMiddleware, getOnePostWithoutView);
+router.get('/:post_id', checkViewCount, getOnePost);
 
 router.delete('/:post_id', authMiddleware, deletePost);
 
