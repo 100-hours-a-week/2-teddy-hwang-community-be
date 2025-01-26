@@ -36,17 +36,21 @@ app.use(cors({
     ],
     methods: ['GET', 'POST', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Retry-After'],
     credentials: true
 }));
 
 // API 요청 제한
 const limiter = rateLimit({
-	windowMs: 1 * 60 * 1000, // 15분
-	limit: 10, // 최대 요청 100건
+	windowMs: 1 * 60 * 1000, // 1분
+	limit: 60, // 최대 요청 60건
 	standardHeaders: 'draft-8', 
-    message: "너무 많은 요청이 들어왔습니다. 잠시 후 다시 시도해주세요.",
+    message: (req, res) => {
+        const retryAfter = res.getHeader('Retry-After');
+        const resetTime = parseInt(retryAfter);
+        return `너무 많은 요청이 들어왔습니다. ${resetTime}초 후에 다시 시도해주세요.`
+    },
 	legacyHeaders: false
-	// store: ... , // Redis, Memcached, etc. See below.
 });
 
 app.use(limiter);
