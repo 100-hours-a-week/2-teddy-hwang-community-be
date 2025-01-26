@@ -1,7 +1,16 @@
 const mysql = require('mysql2/promise');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
+const colors = require('colors');
+const moment = require('moment');
 require('dotenv').config();
+
+// 색상 설정
+colors.setTheme({
+    info: 'blue',
+    success: 'green',
+    warn: 'yellow',
+    error: 'red',
+    query: 'cyan'
+});
 
 // MySQL 연결 풀 설정
 const dbConfig = {
@@ -18,30 +27,11 @@ const dbConfig = {
 // MySQL 연결 풀 생성
 const pool = mysql.createPool(dbConfig);
 
-// 세션 스토어 옵션 설정
-const sessionStoreOptions = {
-    ...dbConfig,
-    createDatabaseTable: true,
-    // 체크 주기(ms)
-    checkExpirationInterval: 900000, // 15분마다 만료된 세션 체크
-    // 세션 만료 시간(ms)
-    expiration: 86400000, // 24시간
-    // 세션 테이블 설정
-    schema: {
-        tableName: 'sessions',
-        columnNames: {
-            session_id: 'session_id',
-            expires: 'expires',
-            data: 'data'
-        }
-    },
-    // 만료된 세션 자동 정리
-    clearExpired: true
-};
+// 타임스탬프 포맷 함수
+const getCurrentTimestamp = () =>  moment().format('YYYY-MM-DD HH:mm:ss');
 
-const sessionStore = new MySQLStore(sessionStoreOptions);
 
 module.exports = {
     pool,
-    sessionStore
+    getCurrentTimestamp
 };

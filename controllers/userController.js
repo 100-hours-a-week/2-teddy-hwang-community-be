@@ -181,7 +181,7 @@ const checkNicknameSignup = async (req, res, next) => {
 //회원 탈퇴
 const removeUser = async (req, res, next) => {
     try {
-        const id = Number(req.user_id);
+        const id = Number(req.user.id);
     
         const user = await deleteUser(id);
 

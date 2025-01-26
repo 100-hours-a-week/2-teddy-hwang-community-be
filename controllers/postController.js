@@ -1,5 +1,5 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
-const { findAll, save, update, findByIdWithoutView, findByIdWithView, deleteById } = require('../model/Post');
+const { findAll, save, update, findById, deleteById } = require('../model/Post');
 const { postUpload } = require('../config/s3Config');
 
 //글생성
@@ -90,7 +90,14 @@ const updatePost = async (req, res, next) => {
 //전체 글 조회
 const getAllPosts = async (req, res, next) => {
     try {
-        const posts = await findAll();
+        // 쿼리 파라미터에서 페이지와 한 페이지당 글 개수 추출
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+
+        if(page < 1 || limit < 1) {
+            next(new BadRequest('잘못된 페이지 파라미터입니다.'));
+        }
+        const posts = await findAll(page, limit);
 
         if(!posts) {
             next(new BadRequest());
@@ -108,7 +115,8 @@ const getAllPosts = async (req, res, next) => {
 const getOnePost = async (req, res, next) => {
     try {
         const id = Number(req.params.post_id);
-        const post = await findByIdWithView(id);
+        const shouldIncreaseViewCount = req.shouldIncreaseViewCount;
+        const post = await findById(id, shouldIncreaseViewCount);
 
         if(!post) {
             next(new BadRequest());
@@ -122,24 +130,7 @@ const getOnePost = async (req, res, next) => {
         next(new InternalServerError());
     }
 }
-//글 상세 조회 조회수 증가x
-const getOnePostWithoutView = async (req, res, next) => {
-    try {
-        const id = Number(req.params.post_id);
-        const post = await findByIdWithoutView(id);
 
-        if(!post) {
-            next(new BadRequest());
-        }
-
-        res.status(200).json({
-            message: '게시글 상세 조회를 성공했습니다.',
-            data: post   
-        });
-    }catch(error) {
-        next(new InternalServerError());
-    }
-}
 //글 삭제
 const deletePost = async (req, res, next) => {
     try {
@@ -167,6 +158,5 @@ module.exports = {
     updatePost: [postUpload.single('image'), updatePost],
     getAllPosts,
     getOnePost,
-    getOnePostWithoutView,
     deletePost
 }
