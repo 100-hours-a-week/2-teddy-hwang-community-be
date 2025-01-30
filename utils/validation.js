@@ -40,7 +40,7 @@ const postValidator = {
         return {
             isValid: trimmed && trimmed.length > 0 && trimmed.length <= 26,
             message: !trimmed ? '제목을 입력해주세요.' :
-                    !trimmed.length > 26 ? '제목은 26자 이내로 작성해주세요.' : null 
+                    trimmed.length > 26 ? '제목은 26자 이내로 작성해주세요.' : null 
         }
     }, 
 
@@ -49,7 +49,7 @@ const postValidator = {
         return {
             isValid: trimmed && trimmed.length > 0 && trimmed.length <= 5000,
             message: !trimmed ? '내용을 입력해주세요.' :
-                    !trimmed.length > 5000 ? '내용은 5000자 이내로 작성해주세요.' : null 
+                    trimmed.length > 5000 ? '내용은 5000자 이내로 작성해주세요.' : null 
         }
     }, 
 
@@ -58,7 +58,7 @@ const postValidator = {
         return {
             isValid: trimmed && trimmed.length > 0 && trimmed.length <= 200,
             message: !trimmed ? '댓글을 입력해주세요.' :
-                    !trimmed.length > 200 ? '댓글은 200자 이내로 작성해주세요.' : null 
+                    trimmed.length > 200 ? '댓글은 200자 이내로 작성해주세요.' : null 
         }
     }, 
 }
