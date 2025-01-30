@@ -3,15 +3,23 @@ const jwtConfig = require('../config/jwtConfig');
 const { findByEmail, findById } = require('../model/User');
 const { BadRequest, InternalServerError, UnauthorizedError } = require('../middleware/customError');
 const { saveToken, findToken, revokeToken, revokeAllUserTokens, findTokenByUserId } = require('../model/RefreshToken');
+const { userValidator } = require('../utils/validation');
 
 // 로그인
 const login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
-        // 사용자 정보가 입력되지 않았을 때
-        if(!email || !password) {
-            return next(new BadRequest('이메일 또는 비밀번호가 입력되지 않았습니다.'));
+        const emailValidation = userValidator.email(email);
+        const passwordValidation = userValidator.passwordValidation(password);
+
+        // 유효성 검사
+        if(!emailValidation.isValid) {
+            return next(new BadRequest(emailValidation.message));
+        }
+
+        if(!passwordValidation.isValid) {
+            return next(new BadRequest(passwordValidation.message));
         }
 
         const user = await findByEmail(email);

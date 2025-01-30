@@ -5,8 +5,15 @@ const createComment = async (req, res, next) => {
     try {
         const {content, user_id, post_id} = req.body;
 
-        if(!content || !user_id || !post_id) {
-            next(new BadRequest());
+        // 유효성 검사
+        const commentValidation = postValidator.comment(content);
+        
+        if (!commentValidation.isValid) {
+            return next(new BadRequest(commentValidation.message));
+        }
+
+        if(!user_id || !post_id) {
+            next(new BadRequest('댓글 생성에 필수 정보가 누락되었습니다.'));
         }
 
         const commentData = {
@@ -47,9 +54,13 @@ const updateComment = async (req, res, next) => {
             user_id,
             comment_id } = req.body;
         
-        if(!content) {
-            next(new BadRequest());
+        // 유효성 검사
+        const commentValidation = postValidator.comment(content);
+                
+        if (!commentValidation.isValid) {
+            return next(new BadRequest(commentValidation.message));
         }
+
         const commentData = {
             content,
             modified_at: timestamp(),
@@ -78,7 +89,7 @@ const findCommentUser = async (req, res, next) => {
         const comments = await findByUserId(userId);
 
         if(!comments) {
-            next(new BadRequest());
+            next(new BadRequest('해당 유저의 댓글을 조회하는데 실패했습니다.'));
         }
         
         res.status(200).json({
@@ -98,7 +109,7 @@ const deleteComment = async (req, res, next) => {
         const comment = await deleteById(id);
 
         if(!comment) {
-            next(new BadRequest());
+            next(new BadRequest('댓글 삭제에 실패했습니다.'));
         }
         
         res.status(200).json({

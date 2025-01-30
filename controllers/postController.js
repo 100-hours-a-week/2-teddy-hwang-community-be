@@ -9,13 +9,23 @@ const createPost = async (req, res, next) => {
             title, 
             content, 
             user_id } = req.body;
-    
         const userId = Number(user_id);
-
         const imageUrl = req.file ? req.file.location : "";
         
-        if(!title || !content || !user_id) {
-            next(new BadRequest());
+        // 유효성 검사
+        const titleValidation = postValidator.title(title);
+        const contentValidation = postValidator.content(content);
+
+        if (!titleValidation.isValid) {
+            return next(new BadRequest(titleValidation.message));
+        }
+
+        if (!contentValidation.isValid) {
+            return next(new BadRequest(contentValidation.message));
+        }
+
+        if(!user_id) {
+            return next(new BadRequest('사용자 정보가 누락되었습니다.'));
         }
 
         const newPost = await save({
@@ -29,13 +39,11 @@ const createPost = async (req, res, next) => {
             comment_count : 0, 
             user_id: userId
         });
-
-        const { id } = newPost;
         
         res.status(201).json({
             message: '게시글 작성을 성공했습니다.',
             data: {
-                post_id: id,
+                post_id: newPost.id,
                 image_url: imageUrl
             }
         });
@@ -59,14 +67,25 @@ const updatePost = async (req, res, next) => {
             title, 
             content, 
             user_id } = req.body;
-
         const userId = Number(user_id);
-
         const imageUrl = req.file ? req.file.location : req.body.image;
 
-        if(!title || !content || !user_id) {
-            next(new BadRequest());
+        // 유효성 검사
+        const titleValidation = postValidator.title(title);
+        const contentValidation = postValidator.content(content);
+
+        if (!titleValidation.isValid) {
+            return next(new BadRequest(titleValidation.message));
         }
+
+        if (!contentValidation.isValid) {
+            return next(new BadRequest(contentValidation.message));
+        }
+
+        if(!user_id) {
+            return next(new BadRequest('사용자 정보가 누락되었습니다.'));
+        }
+
         const postData = {
             title,
             content,
