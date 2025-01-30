@@ -1,6 +1,7 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
 const { findAll, save, update, findById, deleteById } = require('../model/Post');
 const { postUpload } = require('../config/s3Config');
+const { postValidator } = require('../utils/validation');
 
 //글생성
 const createPost = async (req, res, next) => {

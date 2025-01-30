@@ -11,7 +11,7 @@ const login = async (req, res, next) => {
         const { email, password } = req.body;
 
         const emailValidation = userValidator.email(email);
-        const passwordValidation = userValidator.passwordValidation(password);
+        const passwordValidation = userValidator.password(password);
 
         // 유효성 검사
         if(!emailValidation.isValid) {

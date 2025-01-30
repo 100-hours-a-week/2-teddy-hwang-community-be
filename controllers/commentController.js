@@ -1,5 +1,6 @@
 const { BadRequest, InternalServerError } = require('../middleware/customError');
 const { save, update, findByUserId, deleteById } = require('../model/Comment');
+const { postValidator } = require('../utils/validation');
 
 const createComment = async (req, res, next) => {
     try {
