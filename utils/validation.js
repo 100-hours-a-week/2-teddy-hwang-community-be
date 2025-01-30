@@ -24,6 +24,13 @@ const userValidator = {
             message: !nickname ? '닉네임을 입력해주세요.' :
                     !isValid ? '닉네임은 공백 없이 1-10자여야 합니다.' : null
         };
+    },
+    
+    image: (imageUrl) => {
+        return {
+            isValid: !!imageUrl,
+            message: !imageUrl ? '프로필 이미지를 업로드해주세요.' : null
+        };
     }  
 };
 
