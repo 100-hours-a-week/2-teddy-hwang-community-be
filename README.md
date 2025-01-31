@@ -171,6 +171,10 @@ node app.js
 ## 🛠️ 기술 스택
 <img src="https://img.shields.io/badge/node.js-339933?style=for-the-badge&logo=Node.js&logoColor=white"> <img src="https://img.shields.io/badge/express-000000?style=for-the-badge&logo=express&logoColor=white"> <img src="https://img.shields.io/badge/mysql-4479A1?style=for-the-badge&logo=mysql&logoColor=white"> <img src="https://img.shields.io/badge/Amazon RDS-527FFF?style=for-the-badge&logo=Amazon RDS&logoColor=white"> <img src="https://img.shields.io/badge/Amazon S3-569A31?style=for-the-badge&logo=AMAZON S3&logoColor=white">
 
+## 💾 ERD
+![erd](https://github.com/user-attachments/assets/12322a70-1392-493d-8664-0890747f57fa)
+
+
 ## 📚 주요 기능
 ### 🙆‍♂️ 유저
 - 회원가입
