@@ -3,12 +3,14 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const cron = require('node-cron');
 require('dotenv').config();
 
 const authRoutes = require('./routes/authRoutes');
 const postRoutes = require('./routes/postRoutes');
 const userRoutes = require('./routes/userRoutes');
 const commentRoutes = require('./routes/commentRoutes');
+const { deleteExpiredTokens } = require('./model/RefreshToken');
 
 const app = express();
 
@@ -18,6 +20,16 @@ app.disable('x-powered-by');
 const startServer = async () => {
   try {
     console.log('데이터베이스 연결 성공');
+
+    // 일주일 마다 실행 (매주 일요일 자정)
+    cron.schedule('0 0 * * 0', async () => {
+      try {
+        await deleteExpiredTokens();
+        console.log('만료된 refresh tokens 삭제 완료');
+      } catch (error) {
+        console.error('만료된 토큰 삭제 중 에러:', error);
+      }
+    });
 
     app.listen(process.env.PORT, () => {
       console.log(`서버가 작동중입니다. http://localhost:${process.env.PORT}`);

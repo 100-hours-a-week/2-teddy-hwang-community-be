@@ -144,28 +144,9 @@ const logout = async (req, res, next) => {
     return next(new InternalServerError());
   }
 };
-// 모든 디바이스에서 로그아웃
-const logoutAll = async (req, res, next) => {
-  try {
-    const { id: userId } = req.user;
-
-    // 사용자의 모든 Refresh Token 무효화
-    await revokeAllUserTokens(userId);
-
-    // Refresh Token 쿠키 제거
-    res.clearCookie('refreshToken');
-
-    res.status(200).json({
-      message: '모든 디바이스에서 로그아웃 되었습니다.',
-    });
-  } catch (error) {
-    return next(new InternalServerError());
-  }
-};
 
 module.exports = {
   login,
   refresh,
   logout,
-  logoutAll,
 };
