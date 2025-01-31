@@ -1,14 +1,14 @@
 // routes/userRoutes.js
 const express = require('express');
-const { 
-    createUser, 
-    getUserDetails, 
-    updateUserInfo, 
-    updateUserPassword, 
-    existsByEmail, 
-    checkNicknameSignup, 
-    checkNicknameUpdate, 
-    removeUser 
+const {
+  createUser,
+  getUserDetails,
+  updateUserInfo,
+  updateUserPassword,
+  existsByEmail,
+  checkNicknameSignup,
+  checkNicknameUpdate,
+  removeUser,
 } = require('../controllers/userController');
 const { authMiddleware } = require('../middleware/auth');
 

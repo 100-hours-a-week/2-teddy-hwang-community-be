@@ -1,10 +1,10 @@
 // routes/commentRoutes.js
 const express = require('express');
-const { 
-    createComment, 
-    updateComment, 
-    findCommentUser, 
-    deleteComment 
+const {
+  createComment,
+  updateComment,
+  findCommentUser,
+  deleteComment,
 } = require('../controllers/commentController');
 const { authMiddleware } = require('../middleware/auth');
 

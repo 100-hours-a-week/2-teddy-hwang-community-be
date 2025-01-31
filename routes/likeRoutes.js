@@ -1,9 +1,9 @@
 // routes/likeRoutes.js
 const express = require('express');
-const { 
-    addLike, 
-    removeLike, 
-    isLikedByUser 
+const {
+  addLike,
+  removeLike,
+  isLikedByUser,
 } = require('../controllers/likeController');
 const { authMiddleware } = require('../middleware/auth');
 
