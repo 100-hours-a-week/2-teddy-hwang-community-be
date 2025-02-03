@@ -19,6 +19,7 @@ const { userValidator } = require('../utils/validation');
 //사용자 생성
 const createUser = async (req, res, next) => {
   try {
+    // 클라이언트 요청 데이터(이메일, 비밀번호, 닉네임)
     const { email, password, nickname } = req.body;
     const imageUrl = req.file ? req.file.location : '';
 
@@ -70,13 +71,17 @@ const createUser = async (req, res, next) => {
       },
     });
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('회원가입에 실패했습니다.'));
   }
 };
 //회원 정보 조회
 const getUserDetails = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
+
+    if(!id) {
+      return next(new BadRequest('회원 정보 조회에 유저 정보가 누락되었습니다.'));
+    }
 
     const user = await findById(id);
 
@@ -94,15 +99,19 @@ const getUserDetails = async (req, res, next) => {
       },
     });
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('회원 정보 조회에 실패했습니다.'));
   }
 };
 //회원 정보 수정
 const updateUserInfo = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
-    const { nickname } = req.body;
+    const { nickname } = req.body; // 클라이언트가 요청한 데이터 (닉네임)
     const imageUrl = req.file ? req.file.location : req.body.image;
+
+    if(!id) {
+      return next(new BadRequest('회원 정보 수정에 유저 정보가 누락되었습니다.'));
+    }
 
     // 유효성 검사
     const nicknameValidation = userValidator.nickname(nickname);
@@ -127,7 +136,7 @@ const updateUserInfo = async (req, res, next) => {
       },
     });
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('회원 정보 수정에 실패했습니다.'));
   }
 };
 //비밀번호 수정
@@ -136,6 +145,10 @@ const updateUserPassword = async (req, res, next) => {
     //경로 파라미터 추출
     const id = Number(req.user.id);
     const password = req.body.password;
+
+    if(!id) {
+      return next(new BadRequest('비밀번호 수정에 유저 정보가 누락되었습니다.'));
+    }
 
     const passwordValidation = userValidator.password(password);
 
@@ -152,13 +165,17 @@ const updateUserPassword = async (req, res, next) => {
       },
     });
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('비밀번호 수정에 실패했습니다.'));
   }
 };
 //이메일 중복 확인
 const existsByEmail = async (req, res, next) => {
   try {
     const email = req.params.email;
+
+    if(!email) {
+      return next(new BadRequest('이메일 중복 확인에 이메일이 누락되었습니다.'));
+    }
 
     const user = await findByEmail(email);
 
@@ -174,7 +191,7 @@ const existsByEmail = async (req, res, next) => {
       });
     }
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('이메일 중복확인에 실패했습니다.'));
   }
 };
 //닉네임 중복 확인(유저 수정)
@@ -182,6 +199,14 @@ const checkNicknameUpdate = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
     const nickname = req.params.nickname;
+    
+    if(!id) {
+      return next(new BadRequest('유저 수정에 유저 정보가 누락되었습니다.'));
+    }
+
+    if(!nickname) {
+      return next(new BadRequest('유저 수정에 닉네임이 누락되었습니다'));
+    }
 
     const user = await existsByNicknameUpdate(nickname, id);
 
@@ -197,13 +222,17 @@ const checkNicknameUpdate = async (req, res, next) => {
       });
     }
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('유저 수정에 닉네임 중복 확인을 실패했습니다.'));
   }
 };
 //닉네임 중복 확인(회원가입)
 const checkNicknameSignup = async (req, res, next) => {
   try {
     const nickname = req.params.nickname;
+
+    if(!nickname) {
+      return next(new BadRequest('회원 가입에 닉네임 정보가 누락되었습니다.'));
+    }
 
     const user = await existsByNicknameSignup(nickname);
 
@@ -219,13 +248,17 @@ const checkNicknameSignup = async (req, res, next) => {
       });
     }
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('회원 가입에 닉네임 중복확인을 실패했습니다.'));
   }
 };
 //회원 탈퇴
 const removeUser = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
+
+    if(!id) {
+      return next(new BadRequest('회원 탈퇴에 유저 정보가 누락되었습니다.'));
+    }
 
     const user = await deleteUser(id);
 
@@ -237,10 +270,10 @@ const removeUser = async (req, res, next) => {
         },
       });
     } else {
-      next(new BadRequest('회원 탈퇴에 실패했습니다.'));
+      return next(new BadRequest('회원 탈퇴에 실패했습니다.'));
     }
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('회원 탈퇴에 실패했습니다.'));
   }
 };
 

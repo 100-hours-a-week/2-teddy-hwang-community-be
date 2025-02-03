@@ -11,10 +11,12 @@ const {
 } = require('../model/Post');
 const { postUpload } = require('../config/s3Config');
 const { postValidator } = require('../utils/validation');
+const { getTimestamp } = require('../utils/dayUtil');
 
 //글생성
 const createPost = async (req, res, next) => {
   try {
+    // 클라이언트가 요청한 데이터 (제목, 내용, 유저 아이디)
     const { title, content, user_id } = req.body;
     const userId = Number(user_id);
     const imageUrl = req.file ? req.file.location : '';
@@ -32,15 +34,15 @@ const createPost = async (req, res, next) => {
     }
 
     if (!user_id) {
-      return next(new BadRequest('사용자 정보가 누락되었습니다.'));
+      return next(new BadRequest('게시글 작성에 사용자 정보가 누락되었습니다.'));
     }
 
     const newPost = await save({
       title,
       content,
       image: imageUrl,
-      created_at: timestamp(),
-      modified_at: timestamp(),
+      created_at: getTimestamp(),
+      modified_at: getTimestamp(),
       like_count: 0,
       view_count: 0,
       comment_count: 0,
@@ -55,21 +57,14 @@ const createPost = async (req, res, next) => {
       },
     });
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('게시글 작성을 실패했습니다.'));
   }
-};
-//날짜 변환 함수
-const timestamp = () => {
-  const today = new Date();
-  // 미국시간 기준이니까 9를 더해주면 대한민국 시간
-  today.setHours(today.getHours() + 9);
-  // 문자열로 바꿔주고 T를 빈칸으로 바꿔주면 yyyy-mm-dd hh:mm:ss 이런 형식 나옴
-  return today.toISOString().replace('T', ' ').substring(0, 19);
 };
 //글 수정
 const updatePost = async (req, res, next) => {
   try {
     const id = Number(req.params.post_id);
+    // 클라이언트가 요청한 데이터 (제목, 내용, 유저 아이디)
     const { title, content, user_id } = req.body;
     const userId = Number(user_id);
     const imageUrl = req.file ? req.file.location : req.body.image;
@@ -86,15 +81,19 @@ const updatePost = async (req, res, next) => {
       return next(new BadRequest(contentValidation.message));
     }
 
+    if(!id) {
+      return next(new BadRequest('게시글 수정에 게시글 정보가 누락되었습니다.'));
+    }
+
     if (!user_id) {
-      return next(new BadRequest('사용자 정보가 누락되었습니다.'));
+      return next(new BadRequest('게시글 수정에 사용자 정보가 누락되었습니다.'));
     }
 
     const postData = {
       title,
       content,
       image: imageUrl,
-      modified_at: timestamp(),
+      modified_at: getTimestamp(),
       user_id: userId,
     };
 
@@ -107,7 +106,7 @@ const updatePost = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(new InternalServerError());
+    return next(new InternalServerError('게시글 수정에 실패했습니다.'));
   }
 };
 //전체 글 조회
@@ -118,12 +117,12 @@ const getAllPosts = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 10;
 
     if (page < 1 || limit < 1) {
-      next(new BadRequest('잘못된 페이지 파라미터입니다.'));
+      return next(new BadRequest('잘못된 페이지 파라미터입니다.'));
     }
     const posts = await findAll(page, limit);
 
     if (!posts) {
-      next(new BadRequest());
+      return next(new BadRequest('게시글 목록 조회에 실패했습니다.'));
     }
 
     res.status(200).json({
@@ -131,18 +130,22 @@ const getAllPosts = async (req, res, next) => {
       data: posts,
     });
   } catch (error) {
-    next(new InternalServerError());
+    return next(new InternalServerError('게시글 목록 조회에 실패했습니다.'));
   }
 };
 //글 상세 조회
 const getOnePost = async (req, res, next) => {
   try {
     const id = Number(req.params.post_id);
-    const shouldIncreaseViewCount = req.shouldIncreaseViewCount;
+    const shouldIncreaseViewCount = req.shouldIncreaseViewCount; // 조회수 증가를 할 것인지 말 것인지
     const post = await findById(id, shouldIncreaseViewCount);
+    
+    if(!id) {
+      return next(new BadRequest('게시글 상세 조회에 게시글 정보가 없습니다.'));
+    }
 
     if (!post) {
-      next(new BadRequest());
+      return next(new BadRequest('게시글 상세 조회를 실패했습니다.'));
     }
 
     res.status(200).json({
@@ -150,7 +153,7 @@ const getOnePost = async (req, res, next) => {
       data: post,
     });
   } catch (error) {
-    next(new InternalServerError());
+    return next(new InternalServerError('게시글 상세 조회를 실패했습니다.'));
   }
 };
 
@@ -159,20 +162,25 @@ const deletePost = async (req, res, next) => {
   try {
     const id = Number(req.params.post_id);
 
-    const post = await deleteById(id);
+    if(!id) {
+      return next(new BadRequest('게시글 삭제에 게시글 정보가 없습니다.'));
+    }
 
-    if (post) {
+    const post = await deleteById(id);
+   
+
+    if (!post) {
+      return next(new BadRequest('게시글 삭제를 실패했습니다.'));
+    } else {
       res.status(200).json({
         message: '게시글 삭제를 성공했습니다.',
         data: {
           post_id: id,
         },
       });
-    } else {
-      next(new BadRequest());
     }
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('게시글 삭제를 실패했습니다.'));
   }
 };
 
