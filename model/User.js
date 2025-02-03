@@ -1,7 +1,6 @@
 const bcrypt = require('bcrypt');
-const { pool, getCurrentTimestamp } = require('../config/dbConfig');
+const { executeTransaction } = require('../config/dbConfig');
 const {
-  InternalServerError,
   BadRequest,
 } = require('../middleware/customError');
 
@@ -23,54 +22,13 @@ const USER_QUERIES = {
     'UPDATE posts SET is_deleted = true WHERE user_id = ?',
   UPDATE_SOFT_DELETE_COMMENTS:
     'UPDATE comments SET is_deleted = true WHERE user_id = ?',
+  FIND_BY_AUTH_USER:
+  'SELECT u.*, rt.token, rt.expired_at ' +
+  'FROM users u ' +
+  'LEFT JOIN refresh_tokens rt ON u.user_id = rt.user_id ' +
+  'WHERE u.user_id = ? AND u.is_deleted = false AND rt.is_revoked = false',
 };
-// 트랜잭션 실행 함수
-const executeTransaction = async callback => {
-  const timestamp = getCurrentTimestamp();
-  try {
-    console.log(`[${timestamp}] 트랜잭션 시작!!`.info);
-    const conn = await pool.getConnection();
-    await conn.beginTransaction();
 
-    // 쿼리와 파라미터를 결합하는 함수
-    const formatQuery = (sql, params = []) => {
-      if (!params.length) return sql;
-      return sql.replace(/\?/g, () => {
-        const param = params.shift();
-        if (param === null) return 'NULL';
-        if (typeof param === 'string') return `'${param}'`;
-        if (typeof param === 'object' && param instanceof Date)
-          return `'${param.toISOString()}'`;
-        return param;
-      });
-    };
-
-    // 쿼리 프록시 생성
-    const queryProxy = {
-      query: async (sql, params = []) => {
-        const formattedQuery = formatQuery(sql, [...params]); // params 배열 복사
-        console.log(`[${getCurrentTimestamp()}] ${formattedQuery.query}`);
-        return conn.query(sql, params);
-      },
-    };
-
-    try {
-      const result = await callback(queryProxy);
-      await conn.commit();
-      console.log(`[${timestamp}] 트랜잭션 커밋 완료!!`.success);
-      return result;
-    } catch (error) {
-      await conn.rollback();
-      console.log(`[${timestamp}] 트랜잭션 롤백!!`.error, error.message);
-      throw error;
-    } finally {
-      await conn.release();
-    }
-  } catch (error) {
-    console.error(`[${timestamp}] 트랜잭션 실패!!`.error, error.message);
-    throw new InternalServerError();
-  }
-};
 // ID로 유저 조회
 const findById = async id => {
   return executeTransaction(async conn => {
@@ -110,7 +68,7 @@ const updateUser = async (id, nickname, profile_image) => {
     ]);
 
     if (result.affectedRows == 0) {
-      throw new Error('유저를 찾을 수 없습니다.');
+      throw new BadRequest('유저를 찾을 수 없습니다.');
     }
 
     return {
@@ -165,10 +123,18 @@ const deleteUser = async id => {
     ]);
 
     if (result.affectedRows === 0) {
-      throw new BadRequest();
+      throw new BadRequest('회원 탈퇴에 실패했습니다.');
     }
 
     return true;
+  });
+};
+// 유저ID로 사용자 정보 및 토큰 정보 찾기
+const findAuthUser = async userId => {
+  return executeTransaction(async conn => {
+    const [rows] = await conn.query(USER_QUERIES.FIND_BY_AUTH_USER, [userId]);
+
+    return rows[0] || null;
   });
 };
 
@@ -181,4 +147,5 @@ module.exports = {
   existsByNicknameUpdate,
   existsByNicknameSignup,
   deleteUser,
+  findAuthUser
 };
