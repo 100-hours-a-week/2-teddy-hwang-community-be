@@ -4,7 +4,6 @@ const {
   login,
   refresh,
   logout,
-  logoutAll,
 } = require('../controllers/authController');
 const {
   authMiddleware,

@@ -12,7 +12,7 @@ const addLike = async (req, res, next) => {
     const userId = Number(req.user.id);
 
     if (!userId || !postId) {
-      next(new BadRequest());
+      return next(new BadRequest('좋아요 추가에 필수 정보가 누락되었습니다.'));
     }
 
     const like = await insertLike(postId, userId);
@@ -26,7 +26,7 @@ const addLike = async (req, res, next) => {
       },
     });
   } catch (error) {
-    return next(new InternalServerError());
+    return next(new InternalServerError('좋아요 추가에 실패했습니다.'));
   }
 };
 //좋아요 취소
@@ -36,7 +36,7 @@ const removeLike = async (req, res, next) => {
     const userId = Number(req.user.id);
 
     if (!userId || !postId) {
-      next(new BadRequest());
+      return next(new BadRequest('좋아요 취소에 필수 정보가 누락되었습니다.'));
     }
 
     const like = await deleteLike(postId, userId);
@@ -50,7 +50,7 @@ const removeLike = async (req, res, next) => {
       },
     });
   } catch (error) {
-    next(new InternalServerError());
+    return next(new InternalServerError('좋아요 취소에 실패했습니다.'));
   }
 };
 //좋아요 상태 확인
@@ -60,7 +60,7 @@ const isLikedByUser = async (req, res, next) => {
     const userId = Number(req.user.id);
 
     if (!userId || !postId) {
-      next(new BadRequest());
+      return next(new BadRequest('좋아요 상태 확인에 필수 정보가 누락되었습니다.'));
     }
 
     const like = await findPostLike(postId, userId);
@@ -70,7 +70,7 @@ const isLikedByUser = async (req, res, next) => {
       is_liked: like,
     });
   } catch (error) {
-    next(new InternalServerError());
+    return next(new InternalServerError('좋아요 상태 확인에 실패했습니다.'));
   }
 };
 

@@ -18,7 +18,7 @@ class InternalServerError extends CustomError {
   }
 }
 
-class UnauthorizedError extends Error {
+class UnauthorizedError extends CustomError {
   constructor(message = '인증되지 않은 사용자입니다.') {
     super(message, 401);
   }
