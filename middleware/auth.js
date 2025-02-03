@@ -1,6 +1,6 @@
 const jwtConfig = require('../config/jwtConfig');
-const { UnauthorizedError } = require('./customError');
-const { findTokenByUserId, findById } = require('../model/RefreshToken');
+const { findTokenByUserId } = require('../model/RefreshToken');
+const { findAuthUser } = require('../model/User');
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -51,7 +51,7 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    const user = await findById(refreshVerified.data.id);
+    const user = await findAuthUser(refreshVerified.data.id);
     if (!user) {
       return res.status(401).json({
         message: '로그인이 필요한 서비스입니다.',
