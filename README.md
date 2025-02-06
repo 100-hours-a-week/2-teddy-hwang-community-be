@@ -28,6 +28,7 @@ PORT=8080
 
 # CORS 설정
 CORS_ORIGIN=http://localhost:3000
+CORS_EC2=http://ec2_ip:3000
 
 # AWS S3 설정
 S3_ACCESS_KEY=your_aws_access_key                  # AWS IAM 액세스 키
