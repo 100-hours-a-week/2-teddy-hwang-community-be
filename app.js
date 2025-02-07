@@ -11,6 +11,7 @@ const postRoutes = require('./routes/postRoutes');
 const userRoutes = require('./routes/userRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const { deleteExpiredTokens } = require('./model/RefreshToken');
+const { executeTransaction } = require('./config/dbConfig');
 
 const app = express();
 
@@ -90,6 +91,31 @@ app.use(
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 헬스 체크 엔드포인트
+app.get('/health-check', async (req, res) => {
+  const health = {
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: new Date(),
+    service: 'backend',
+    database: 'connected'
+  };
+
+  try {
+    // 데이터베이스 연결 상태 확인
+    await executeTransaction(async (conn) => {
+      await conn.query('SELECT 1');
+    });
+    
+    res.status(200).json(health);
+  } catch (error) {
+    health.status = 'error';
+    health.database = 'disconnected';
+    health.message = error.message;
+    res.status(503).json(health);
+  }
+});
 
 // 경로 설정
 app.use('/api/auth', authRoutes);
