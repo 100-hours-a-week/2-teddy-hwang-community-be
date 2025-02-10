@@ -1,10 +1,11 @@
-const { S3Client } = require('@aws-sdk/client-s3');
+const { S3Client, } = require('@aws-sdk/client-s3');
 const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
 const uuid = require('uuid4');
 const { BadRequest } = require('../middleware/customError');
 
+// S3 클라이언트 설정
 const s3Client = new S3Client({
   region: process.env.S3_REGION,
   credentials: {
@@ -13,6 +14,14 @@ const s3Client = new S3Client({
   },
 });
 
+// CloudFront URL 생성 함수
+const getCloudFrontUrl = (s3Url) => {
+  if(!s3Url) return '';
+  const key = s3Url.split('/').slice(3).join('/');
+  return `${process.env.CLOUDFRONT_DOMAIN}/${key}`;
+}
+
+// 파일 업로더 생성함수
 const createUploader = folder => {
   return multerS3({
     s3: s3Client,
@@ -26,17 +35,24 @@ const createUploader = folder => {
       const lastDotIndex = originalFilename.lastIndexOf('.');
       const filename = originalFilename.substring(0, lastDotIndex);
       const fileExtension = file.originalname.split('.').pop();
-      cb(
-        null,
-        `${folder}/${Date.now()}-${uuid()}-${filename}.${fileExtension}`,
-      );
+      const key = `${folder}/${Date.now()}-${uuid()}-${filename}.${fileExtension}`;
+
+      // key를 request 객체에 저장하여 나중에 URL 생성에 사용
+      req.fileKey = key;
+      cb(null, key);
+    },
+    metadata: (req, file, cb) => {
+      cb(null, {fieldName: file.fieldname});
     },
   });
 };
 
 const postUpload = multer({
   storage: createUploader('posts'),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { 
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 1 // 단일 파일 허용
+  },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
       return cb(new BadRequest('이미지 파일만 업로드 가능합니다.'), false);
@@ -47,7 +63,10 @@ const postUpload = multer({
 
 const userUpload = multer({
   storage: createUploader('users'),
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { 
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 1 // 단일 파일 허용 
+  },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
       return cb(new BadRequest('이미지 파일만 업로드 가능합니다.'), false);
@@ -59,12 +78,15 @@ const userUpload = multer({
 const deleteImage = async fileKey => {
   if (!fileKey) return;
 
-  const params = {
-    Bucket: process.env.S3_BUCKET_NAME,
-    Key: fileKey,
-  };
-
   try {
+    // CloudFront URL에서 key 추출
+    const key = fileKey.replace(`${process.env.CLOUDFRONT_DOMAIN}/`, '');
+
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME,
+      Key: key,
+    };
+
     await s3Client.send(new DeleteObjectCommand(params));
     return true;
   } catch (error) {
@@ -78,4 +100,5 @@ module.exports = {
   postUpload,
   userUpload,
   deleteImage,
+  getCloudFrontUrl,
 };
