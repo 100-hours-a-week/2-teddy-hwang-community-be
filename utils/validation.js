@@ -14,8 +14,7 @@ const userValidator = {
   },
 
   password: password => {
-    const isValid =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#.~_-])[A-Za-z\d@$!%*?&#.~_-]{8,20}$/.test(
+    const isValid = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#.~_-])[A-Za-z\d@$!%*?&#.~_-]{8,20}$/.test(
         password,
       );
     return {
@@ -39,13 +38,62 @@ const userValidator = {
           : null,
     };
   },
+  
+  image: (file, imagePath) => {
+    // 신규 업로드 파일 검증
+    if (file) {
+      if (!file.mimetype.startsWith('image/')) {
+        return {
+          isValid: false,
+          message: '이미지 파일만 업로드 가능합니다.'
+        };
+      }
 
-  image: imageUrl => {
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        return {
+          isValid: false,
+          message: '이미지 크기는 5MB 이하여야 합니다.'
+        };
+      }
+
+      return {
+        isValid: true,
+        message: null
+      };
+    }
+
+    // 기본 프로필 이미지 경로인 경우
+    if (imagePath === `${process.env.BASIC_PROFILE_IMAGE}`) {
+      return {
+        isValid: true,
+        message: null
+      };
+    }
+
+    // 기존 이미지 URL 검증
+    if (imagePath) {
+      const validDomains = [process.env.CLOUDFRONT_DOMAIN, process.env.S3_BUCKET_URL];
+      const isValidDomain = validDomains.some(domain => imagePath.startsWith(domain));
+      
+      if (!isValidDomain) {
+        return {
+          isValid: false,
+          message: '유효하지 않은 이미지 경로입니다.'
+        };
+      }
+
+      return {
+        isValid: true,
+        message: null
+      };
+    }
+
     return {
-      isValid: !!imageUrl,
-      message: !imageUrl ? '프로필 이미지를 업로드해주세요.' : null,
+      isValid: false,
+      message: '프로필 이미지를 업로드해주세요.'
     };
-  },
+  }
 };
 
 const postValidator = {
@@ -84,7 +132,59 @@ const postValidator = {
           : null,
     };
   },
+
+  image: (file, imagePath) => {
+    // 이미지가 없는 경우도 유효
+    if (!file && !imagePath) return { isValid: true, message: null };
+    
+    // 신규 업로드 파일 검증
+    if (file) {
+      if (!file.mimetype.startsWith('image/')) {
+        return {
+          isValid: false,
+          message: '이미지 파일만 업로드 가능합니다.'
+        };
+      }
+
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        return {
+          isValid: false,
+          message: '이미지 크기는 5MB 이하여야 합니다.'
+        };
+      }
+
+      return {
+        isValid: true,
+        message: null
+      };
+    }
+
+    // 기존 이미지 URL 검증
+    if (imagePath) {
+      const validDomains = [process.env.CLOUDFRONT_DOMAIN, process.env.S3_BUCKET_URL];
+      const isValidDomain = validDomains.some(domain => imagePath.startsWith(domain));
+      
+      if (!isValidDomain) {
+        return {
+          isValid: false,
+          message: '유효하지 않은 이미지 경로입니다.'
+        };
+      }
+
+      return {
+        isValid: true,
+        message: null
+      };
+    }
+
+    return {
+      isValid: false,
+      message: '프로필 이미지를 업로드해주세요.'
+    };
+  }
 };
+
 
 module.exports = {
   userValidator,
