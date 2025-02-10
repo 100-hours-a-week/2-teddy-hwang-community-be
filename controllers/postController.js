@@ -9,21 +9,22 @@ const {
   findById,
   deleteById,
 } = require('../model/Post');
-const { postUpload } = require('../config/s3Config');
+const { postUpload, getCloudFrontUrl, deleteImage } = require('../config/s3Config');
 const { postValidator } = require('../utils/validation');
 const { getTimestamp } = require('../utils/dayUtil');
 
-//글생성
+// 글생성
 const createPost = async (req, res, next) => {
   try {
     // 클라이언트가 요청한 데이터 (제목, 내용, 유저 아이디)
     const { title, content, user_id } = req.body;
     const userId = Number(user_id);
-    const imageUrl = req.file ? req.file.location : '';
+    const file = req.file;
 
     // 유효성 검사
     const titleValidation = postValidator.title(title);
     const contentValidation = postValidator.content(content);
+    const imageValidation = postValidator.image(file);
 
     if (!titleValidation.isValid) {
       return next(new BadRequest(titleValidation.message));
@@ -33,10 +34,16 @@ const createPost = async (req, res, next) => {
       return next(new BadRequest(contentValidation.message));
     }
 
+    if (!imageValidation.isValid) {
+      return next(new BadRequest(imageValidation.message));
+    }
+
     if (!user_id) {
       return next(new BadRequest('게시글 작성에 사용자 정보가 누락되었습니다.'));
     }
 
+    const imageUrl = file ? file.location : '';
+    
     const newPost = await save({
       title,
       content,
@@ -67,11 +74,13 @@ const updatePost = async (req, res, next) => {
     // 클라이언트가 요청한 데이터 (제목, 내용, 유저 아이디)
     const { title, content, user_id } = req.body;
     const userId = Number(user_id);
-    const imageUrl = req.file ? req.file.location : req.body.image;
+    const file = req.file;
+    const currentImage = req.body.image;
 
     // 유효성 검사
     const titleValidation = postValidator.title(title);
     const contentValidation = postValidator.content(content);
+    const imageValidation = postValidator.image(file, currentImage);
 
     if (!titleValidation.isValid) {
       return next(new BadRequest(titleValidation.message));
@@ -81,6 +90,10 @@ const updatePost = async (req, res, next) => {
       return next(new BadRequest(contentValidation.message));
     }
 
+    if (!imageValidation.isValid) {
+      return next(new BadRequest(imageValidation.message));
+    }
+
     if(!id) {
       return next(new BadRequest('게시글 수정에 게시글 정보가 누락되었습니다.'));
     }
@@ -88,6 +101,8 @@ const updatePost = async (req, res, next) => {
     if (!user_id) {
       return next(new BadRequest('게시글 수정에 사용자 정보가 누락되었습니다.'));
     }
+
+    const imageUrl = file ? getCloudFrontUrl(file.location) : currentImage;
 
     const postData = {
       title,
@@ -119,15 +134,27 @@ const getAllPosts = async (req, res, next) => {
     if (page < 1 || limit < 1) {
       return next(new BadRequest('잘못된 페이지 파라미터입니다.'));
     }
-    const posts = await findAll(page, limit);
+    const { posts, hasMore, totalPosts } = await findAll(page, limit);
 
     if (!posts) {
       return next(new BadRequest('게시글 목록 조회에 실패했습니다.'));
     }
 
+    const cdnPosts = posts.map(post => ({
+      ...post,
+      author: {
+        ...post.author,
+        profile_image: getCloudFrontUrl(post.author.profile_image),
+      },
+    }));
+
     res.status(200).json({
       message: '게시글 목록 조회를 성공했습니다.',
-      data: posts,
+      data: {
+        posts: cdnPosts,
+      }, 
+      hasMore,
+      totalPosts
     });
   } catch (error) {
     return next(new InternalServerError('게시글 목록 조회에 실패했습니다.'));
@@ -148,9 +175,25 @@ const getOnePost = async (req, res, next) => {
       return next(new BadRequest('게시글 상세 조회를 실패했습니다.'));
     }
 
+    const cdnPost = {
+      ...post,
+      post_image: post.post_image ? getCloudFrontUrl(post.post_image) : '',
+      post_author: {
+        ...post.post_author,
+        profile_image: getCloudFrontUrl(post.post_author.profile_image),
+      },
+      comments: post.comments.map(comment => ({
+        ...comment,
+        author: {
+          ...comment.author,
+          profile_image: getCloudFrontUrl(comment.author.profile_image)
+        }
+      }))
+    };
+
     res.status(200).json({
       message: '게시글 상세 조회를 성공했습니다.',
-      data: post,
+      data: cdnPost,
     });
   } catch (error) {
     return next(new InternalServerError('게시글 상세 조회를 실패했습니다.'));
@@ -167,7 +210,6 @@ const deletePost = async (req, res, next) => {
     }
 
     const post = await deleteById(id);
-   
 
     if (!post) {
       return next(new BadRequest('게시글 삭제를 실패했습니다.'));

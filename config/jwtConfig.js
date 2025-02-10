@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getCloudFrontUrl } = require('./s3Config');
 require('dotenv').config();
 
 const jwtConfig = {
@@ -19,7 +20,7 @@ const jwtConfig = {
         id: user.user_id,
         email: user.email,
         nickname: user.nickname,
-        profile_image: user.profile_image,
+        profile_image: getCloudFrontUrl(user.profile_image),
       },
       this.access.secret,
       { expiresIn: this.access.expiresIn },

@@ -13,22 +13,22 @@ const {
   deleteUser,
 } = require('../model/User');
 const bcrypt = require('bcrypt');
-const { userUpload } = require('../config/s3Config');
+const { userUpload, getCloudFrontUrl } = require('../config/s3Config');
 const { userValidator } = require('../utils/validation');
 
-//사용자 생성
+// 사용자 생성
 const createUser = async (req, res, next) => {
   try {
     // 클라이언트 요청 데이터(이메일, 비밀번호, 닉네임)
     const { email, password, nickname } = req.body;
-    const imageUrl = req.file ? req.file.location : '';
+    const file = req.file;
 
     // 유효성 검사
     const emailValidation = userValidator.email(email);
     const passwordValidation = userValidator.password(password);
     const nicknameValidation = userValidator.nickname(nickname);
-    const imageValidation = userValidator.image(imageUrl);
-
+    const imageValidation = userValidator.image(file);
+  
     if (!emailValidation.isValid) {
       return next(new BadRequest(emailValidation.message));
     }
@@ -45,18 +45,22 @@ const createUser = async (req, res, next) => {
       return next(new BadRequest(imageValidation.message));
     }
 
-    //이메일 중복검사
+    // 이메일 중복검사
     const existingEmail = await findByEmail(email);
     if (existingEmail) {
       return next(new BadRequest('이메일이 이미 존재합니다.'));
     }
-    //닉네임 중복검사
+    // 닉네임 중복검사
     const existingNickname = await existsByNicknameSignup(nickname);
     if (existingNickname) {
       return next(new BadRequest('닉네임이 이미 존재합니다.'));
     }
+    // 비밀번호 암호화
     const encryptPassword = await bcrypt.hash(password, 10);
-    //회원가입
+   
+    const imageUrl = file ? file.location : '';
+    
+    // 회원가입
     const newUser = await save({
       email,
       password: encryptPassword,
@@ -74,7 +78,7 @@ const createUser = async (req, res, next) => {
     return next(new InternalServerError('회원가입에 실패했습니다.'));
   }
 };
-//회원 정보 조회
+// 회원 정보 조회
 const getUserDetails = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
@@ -95,19 +99,24 @@ const getUserDetails = async (req, res, next) => {
         user_id: user.user_id,
         email: user.email,
         nickname: user.nickname,
-        profile_image: user.profile_image,
+        profile_image: getCloudFrontUrl(user.profile_image)
       },
     });
   } catch (error) {
     return next(new InternalServerError('회원 정보 조회에 실패했습니다.'));
   }
 };
-//회원 정보 수정
+// 회원 정보 수정
 const updateUserInfo = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
     const { nickname } = req.body; // 클라이언트가 요청한 데이터 (닉네임)
-    const imageUrl = req.file ? req.file.location : req.body.image;
+    const file = req.file;
+    let currentImage = req.body.image;
+
+    if(currentImage === "/images/profile-image.jpg") {
+      currentImage = process.env.BASIC_PROFILE_IMAGE;
+    }
 
     if(!id) {
       return next(new BadRequest('회원 정보 수정에 유저 정보가 누락되었습니다.'));
@@ -115,7 +124,7 @@ const updateUserInfo = async (req, res, next) => {
 
     // 유효성 검사
     const nicknameValidation = userValidator.nickname(nickname);
-    const imageValidation = userValidator.image(imageUrl);
+    const imageValidation = userValidator.image(file, currentImage);
 
     if (!nicknameValidation.isValid) {
       return next(new BadRequest(nicknameValidation.message));
@@ -125,13 +134,15 @@ const updateUserInfo = async (req, res, next) => {
       return next(new BadRequest(imageValidation.message));
     }
 
+    const imageUrl = file ? getCloudFrontUrl(file.location) : getCloudFrontUrl(currentImage);
+
     const user = await updateUser(id, nickname, imageUrl);
 
     res.status(200).json({
       message: '회원 정보 수정을 성공했습니다.',
       data: {
         user_id: user.id,
-        profile_image: user.profile_image,
+        profile_image: imageUrl,
         nickname: user.nickname,
       },
     });
@@ -139,10 +150,10 @@ const updateUserInfo = async (req, res, next) => {
     return next(new InternalServerError('회원 정보 수정에 실패했습니다.'));
   }
 };
-//비밀번호 수정
+// 비밀번호 수정
 const updateUserPassword = async (req, res, next) => {
   try {
-    //경로 파라미터 추출
+    // 경로 파라미터 추출
     const id = Number(req.user.id);
     const password = req.body.password;
 
@@ -168,7 +179,7 @@ const updateUserPassword = async (req, res, next) => {
     return next(new InternalServerError('비밀번호 수정에 실패했습니다.'));
   }
 };
-//이메일 중복 확인
+// 이메일 중복 확인
 const existsByEmail = async (req, res, next) => {
   try {
     const email = req.params.email;
@@ -194,7 +205,7 @@ const existsByEmail = async (req, res, next) => {
     return next(new InternalServerError('이메일 중복확인에 실패했습니다.'));
   }
 };
-//닉네임 중복 확인(유저 수정)
+// 닉네임 중복 확인(유저 수정)
 const checkNicknameUpdate = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
@@ -225,7 +236,7 @@ const checkNicknameUpdate = async (req, res, next) => {
     return next(new InternalServerError('유저 수정에 닉네임 중복 확인을 실패했습니다.'));
   }
 };
-//닉네임 중복 확인(회원가입)
+// 닉네임 중복 확인(회원가입)
 const checkNicknameSignup = async (req, res, next) => {
   try {
     const nickname = req.params.nickname;
@@ -251,7 +262,7 @@ const checkNicknameSignup = async (req, res, next) => {
     return next(new InternalServerError('회원 가입에 닉네임 중복확인을 실패했습니다.'));
   }
 };
-//회원 탈퇴
+// 회원 탈퇴
 const removeUser = async (req, res, next) => {
   try {
     const id = Number(req.user.id);
